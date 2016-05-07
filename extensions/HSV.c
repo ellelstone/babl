@@ -167,9 +167,9 @@ rgba_to_hsv_step (char *src,
   double hue, saturation, value;
   double min, chroma;
 
-  double red   = linear_to_gamma_2_2 (((double *) src)[0]);
-  double green = linear_to_gamma_2_2 (((double *) src)[1]);
-  double blue  = linear_to_gamma_2_2 (((double *) src)[2]);
+  double red   = ((double *) src)[0];
+  double green = ((double *) src)[1];
+  double blue  = ((double *) src)[2];
 
   if (red > green)
     {
@@ -269,9 +269,9 @@ hsv_to_rgba_step (char *src,
   green += min;
   blue  += min;
 
-  ((double *) dst)[0] = gamma_2_2_to_linear (red);
-  ((double *) dst)[1] = gamma_2_2_to_linear (green);
-  ((double *) dst)[2] = gamma_2_2_to_linear (blue);
+  ((double *) dst)[0] = red;
+  ((double *) dst)[1] = green;
+  ((double *) dst)[2] = blue;
 }
 
 static long

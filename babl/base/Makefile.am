@@ -5,7 +5,6 @@ h_sources =  			\
 c_sources =			\
 	babl-base.c		\
 	formats.c		\
-	pow-24.c		\
 	type-float.c		\
 	type-half.c		\
 	type-u8.c		\
@@ -23,6 +22,5 @@ libbase_la_SOURCES= $(h_sources) $(c_sources)
 libbase_la_LIBADD = $(MATH_LIB)
 
 EXTRA_DIST = 		\
-	util.h	\
-	pow-24.h
+	util.h
 

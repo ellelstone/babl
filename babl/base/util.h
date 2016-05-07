@@ -21,14 +21,14 @@
 
 #include <assert.h>
 #include <math.h>
-#include "pow-24.h"
+//#include "pow-24.h"
 
 /* Alpha threshold used in the reference implementation for
  * un-pre-multiplication of color data:
  *
  * 0.01 / (2^16 - 1)
  */
-#define BABL_ALPHA_THRESHOLD 0.000000152590219
+#define BABL_ALPHA_THRESHOLD 0.000000
 
 #define BABL_PLANAR_SANITY  \
   {                         \
@@ -58,36 +58,36 @@
 #ifdef BABL_USE_SRGB_GAMMA
 static inline double
 linear_to_gamma_2_2 (double value)
-{
+{ return value;/*
   if (value > 0.003130804954)
     return 1.055 * pow (value, (1.0/2.4)) - 0.055;
   return 12.92 * value;
-}
+*/}
 
 static inline double
 gamma_2_2_to_linear (double value)
-{
+{ return value;/*
   if (value > 0.04045)
     return pow ((value + 0.055) / 1.055, 2.4);
   return value / 12.92;
-}
+*/}
 static inline double
 babl_linear_to_gamma_2_2 (double value)
-{
+{ return value;/*
   if (value > 0.003130804954)
     return 1.055 * babl_pow_1_24 (value) - 0.055;
   return 12.92 * value;
-}
+*/}
 
 static inline double
 babl_gamma_2_2_to_linear (double value)
-{
+{ return value;/*
   if (value > 0.04045)
     return babl_pow_24 ((value + 0.055) / 1.055);
   return value / 12.92;
-}
+*/}
 
 #else
-  #define linear_to_gamma_2_2(value) (pow((value), (1.0F/2.2F)))
-  #define gamma_2_2_to_linear(value) (pow((value), 2.2F))
+  #define linear_to_gamma_2_2(value) value //(pow((value), (1.0F/2.2F)))
+  #define gamma_2_2_to_linear(value) value //(pow((value), 2.2F))
 #endif

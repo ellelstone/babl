@@ -115,9 +115,9 @@ rgb_to_hsl_step (double* src,
   double hue, saturation, lightness;
   int cpn_max;
 
-  double red   = linear_to_gamma_2_2 (src[0]);
-  double green = linear_to_gamma_2_2 (src[1]);
-  double blue  = linear_to_gamma_2_2 (src[2]);
+  double red   = src[0];
+  double green = src[1];
+  double blue  = src[2];
 
   max = MAX (red, MAX (green, blue));
   min = MIN (red, MIN (green, blue));
@@ -237,9 +237,9 @@ hsl_to_rgb_step (double *src,
       blue  = hue2cpn (p, q, hue - 1.0/3.0);
     }
 
-  dst[0] = gamma_2_2_to_linear (red);
-  dst[1] = gamma_2_2_to_linear (green);
-  dst[2] = gamma_2_2_to_linear (blue);
+  dst[0] = red;
+  dst[1] = green;
+  dst[2] = blue;
 }
 
 

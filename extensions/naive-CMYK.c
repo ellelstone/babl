@@ -133,9 +133,9 @@ rgba_to_cmyk (char *src,
 {
   while (n--)
     {
-      double red   = linear_to_gamma_2_2 (((double *) src)[0]);
-      double green = linear_to_gamma_2_2 (((double *) src)[1]);
-      double blue  = linear_to_gamma_2_2 (((double *) src)[2]);
+      double red   = ((double *) src)[0];
+      double green = ((double *) src)[1];
+      double blue  = ((double *) src)[2];
 
       double cyan, magenta, yellow, key;
 
@@ -205,9 +205,9 @@ cmyk_to_rgba (char *src,
       green = 1.0 - magenta;
       blue  = 1.0 - yellow;
 
-      ((double *) dst)[0] = gamma_2_2_to_linear (red);
-      ((double *) dst)[1] = gamma_2_2_to_linear (green);
-      ((double *) dst)[2] = gamma_2_2_to_linear (blue);
+      ((double *) dst)[0] = red;
+      ((double *) dst)[1] = green;
+      ((double *) dst)[2] = blue;
 
       ((double *) dst)[3] = 1.0;
 
@@ -224,9 +224,9 @@ rgba_to_cmy (char *src,
 {
   while (n--)
     {
-      double red   = linear_to_gamma_2_2 (((double *) src)[0]);
-      double green = linear_to_gamma_2_2 (((double *) src)[1]);
-      double blue  = linear_to_gamma_2_2 (((double *) src)[2]);
+      double red   = ((double *) src)[0];
+      double green = ((double *) src)[1];
+      double blue  = ((double *) src)[2];
 
       double cyan, magenta, yellow;
 
@@ -261,9 +261,9 @@ cmy_to_rgba (char *src,
       green = 1.0 - magenta;
       blue  = 1.0 - yellow;
 
-      ((double *) dst)[0] = gamma_2_2_to_linear (red);
-      ((double *) dst)[1] = gamma_2_2_to_linear (green);
-      ((double *) dst)[2] = gamma_2_2_to_linear (blue);
+      ((double *) dst)[0] = red;
+      ((double *) dst)[1] = green;
+      ((double *) dst)[2] = blue;
 
       ((double *) dst)[3] = 1.0;
 

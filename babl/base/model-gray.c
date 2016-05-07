@@ -225,7 +225,7 @@ rgb_to_gray_2_2 (int    src_bands,
       luminance = red * Y[0] +
                   green * Y[1] +
                   blue * Y[2];
-      *(double *) dst[0] = linear_to_gamma_2_2 (luminance);
+      *(double *) dst[0] = luminance;
 
       if (dst_bands == 2)
         *(double *) dst[1] = alpha;
@@ -252,7 +252,7 @@ gray_2_2_to_rgb (int    src_bands,
       double red, green, blue;
       double alpha;
 
-      luminance = gamma_2_2_to_linear (*(double *) src[0]);
+      luminance = *(double *) src[0];
       red       = luminance;
       green     = luminance;
       blue      = luminance;
@@ -491,7 +491,7 @@ rgba2gray_gamma_2_2_premultiplied (char *src,
       luminance = red * Y[0] +
                   green * Y[1] +
                   blue * Y[2];
-      luma = linear_to_gamma_2_2 (luminance);
+      luma = luminance;
 
       ((double *) dst)[0] = luma * alpha;
       ((double *) dst)[1] = alpha;
@@ -515,7 +515,7 @@ gray_gamma_2_2_premultiplied2rgba (char *src,
       double luminance;
 
       luma      = luma / alpha;
-      luminance = gamma_2_2_to_linear (luma);
+      luminance = luma;
 
       ((double *) dst)[0] = luminance;
       ((double *) dst)[1] = luminance;

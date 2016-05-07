@@ -91,9 +91,9 @@ rgba_to_ycbcra (char *src,
 
       double luminance, cb, cr;
 
-      red   = linear_to_gamma_2_2 (red);
-      green = linear_to_gamma_2_2 (green);
-      blue  = linear_to_gamma_2_2 (blue);
+      /*red   = linear_to_gamma_2_2 (red);*/
+      /*green = linear_to_gamma_2_2 (green);*/
+      /*blue  = linear_to_gamma_2_2 (blue);*/
 
       luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
       cb        = -0.168736 * red - 0.331264 * green + 0.5 * blue;
@@ -124,9 +124,9 @@ rgba_to_ycbcr (char *src,
 
       double luminance, cb, cr;
 
-      red   = linear_to_gamma_2_2 (red);
-      green = linear_to_gamma_2_2 (green);
-      blue  = linear_to_gamma_2_2 (blue);
+      /*red   = linear_to_gamma_2_2 (red);*/
+      /*green = linear_to_gamma_2_2 (green);*/
+      /*blue  = linear_to_gamma_2_2 (blue);*/
 
       luminance = 0.299 * red + 0.587 * green + 0.114 * blue;
       cb        = -0.168736 * red - 0.331264 * green + 0.5 * blue;
@@ -160,9 +160,9 @@ ycbcra_to_rgba (char *src,
       green = 1.0 * luminance - 0.344136 * cb - 0.71414136 * cr;
       blue  = 1.0 * luminance + 1.772 * cb + 0.0 * cr;
 
-      red   = gamma_2_2_to_linear (red);
-      green = gamma_2_2_to_linear (green);
-      blue  = gamma_2_2_to_linear (blue);
+      /*red   = gamma_2_2_to_linear (red);*/
+      /*green = gamma_2_2_to_linear (green);*/
+      /*blue  = gamma_2_2_to_linear (blue);*/
 
       ((double *) dst)[0] = red;
       ((double *) dst)[1] = green;
@@ -193,9 +193,9 @@ ycbcr_to_rgba (char *src,
       green = 1.0 * luminance - 0.344136 * cb - 0.71414136 * cr;
       blue  = 1.0 * luminance + 1.772 * cb + 0.0 * cr;
 
-      red   = gamma_2_2_to_linear (red);
-      green = gamma_2_2_to_linear (green);
-      blue  = gamma_2_2_to_linear (blue);
+      /*red   = gamma_2_2_to_linear (red);*/
+      /*green = gamma_2_2_to_linear (green);*/
+      /*blue  = gamma_2_2_to_linear (blue);*/
 
       ((double *) dst)[0] = red;
       ((double *) dst)[1] = green;
