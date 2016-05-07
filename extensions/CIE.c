@@ -21,9 +21,178 @@
 #include "config.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "babl.h"
+#include "babl/babl.h"
+#include "util.h"
 #include "extensions/util.h"
+
+/*******begin James Gregson's matrix code *****************************/
+
+/**
+ @file solve_2x2_3x3.h
+ http://jamesgregson.blogspot.com/2012/09/2x2-and-3x3-matrix-inverses-and-linear.html
+ @author James Gregson (james.gregson@gmail.com)
+ @brief 2x2 and 3x3 matrix inverses and linear system solvers. Free for all use. Best efforts made at testing although I give no guarantee of correctness. Although not required, please leave this notice intact and pass along any bug-fixes/reports to the email address above.  See the functions test_2x2() and test_3x3() for usage details.
+*/
+
+/**
+* Elle Stone modified the solve_2x2_3x3.h code to change "const double"
+* to "double" for the input matrices. This probably wasn't required as
+* the problems I was having compiling the code seem to have been
+* related to problems with include files and/or linking issues.
+*
+* Elle Stone also removed the test_2x2 and test_3x3 matrix functions
+* because they use drand, which doesn't compile under Windows.
+*/
+
+#ifndef SOLVE_2X2_3X3
+#define SOLVE_2x2_3X3
+
+#define SOLVE_SUCCESS 0
+#define SOLVE_FAILURE 1
+#define SOLVE_EPSILON 1e-8
+
+/**
+ @brief Compute the inverse of a 2x2 matrix A and store it in iA, returns SOLVE_FAILURE on failure.
+ @param[in] A Input matrix, indexed by row then column, i.e. A[row][column]
+ @param[out] iA Output matrix that is the inverse of A, provided a is definite
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int invert_2x2( double A[2][2], double iA[2][2] );
+
+/**
+ @brief Solves a 2x2 system Ax=b
+ @param[in] A input 2x2 matrix
+ @param[out] x output solution vector
+ @param[in] b input right-hand-side
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int solve_2x2( double A[2][2], double x[2], double b[2] );
+
+/**
+ @brief Computes the squared residual of a solution x for a linear system Ax=b, for testing purposes.
+ @param[in] A input matrix
+ @param[in] x input solution vector
+ @param[in] b input right-hand-side
+ @return squared 2-norm of residual vector
+ */
+double residual_2x2( double A[2][2], double x[2], double b[2] );
+
+/**
+ @brief Compute the inverse of a 3x3 matrix A and store it in iA, returns SOLVE_FAILURE on failure.
+ @param[in] A Input matrix, indexed by row then column, i.e. A[row][column]
+ @param[out] iA Output matrix that is the inverse of A, provided a is definite
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int invert_3x3( double A[3][3], double iA[3][3] );
+
+/**
+ @brief Solves a 3x3 system Ax=b
+ @param[in] A input 3x3 matrix
+ @param[out] x output solution vector
+ @param[in] b input right-hand-side
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int solve_3x3( double A[3][3], double x[3], double b[3] );
+
+/**
+ @brief Computes the squared residual of a solution x for a linear system Ax=b, for testing purposes.
+ @param[in] A input matrix
+ @param[in] x input solution vector
+ @param[in] b input right-hand-side
+ @return squared 2-norm of residual vector
+ */
+double residual_3x3( double A[3][3], double x[3], double b[3] );
+
+
+#endif
+
+/**
+ @file solve_2x2_3x3.c
+ @author James Gregson (james.gregson@gmail.com)
+ http://jamesgregson.blogspot.com/2012/09/2x2-and-3x3-matrix-inverses-and-linear.html
+ @brief Implementation for 2x2 and 3x3 matrix inverses and linear system solution. See solve_2x2_3x3.h for details.
+*/
+
+int invert_2x2( double A[2][2], double iA[2][2] ){
+ double det;
+ det = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+ if( fabs(det) < SOLVE_EPSILON )
+  return SOLVE_FAILURE;
+
+ iA[0][0] =  A[1][1]/det; iA[0][1] = -A[0][1]/det;
+ iA[1][0] = -A[1][0]/det; iA[1][1] =  A[0][0]/det;
+
+ return SOLVE_SUCCESS;
+}
+
+int solve_2x2( double A[2][2], double x[2], double b[2] ){
+ double iA[2][2];
+
+ if( invert_2x2( A, iA ) )
+  return SOLVE_FAILURE;
+
+ x[0] = iA[0][0]*b[0] + iA[0][1]*b[1];
+ x[1] = iA[1][0]*b[0] + iA[1][1]*b[1];
+
+ return SOLVE_SUCCESS;
+}
+
+double residual_2x2( double A[2][2], double x[2], double b[2] ){
+ double r[2];
+ r[0] = A[0][0]*x[0] + A[0][1]*x[1] - b[0];
+ r[1] = A[1][0]*x[0] + A[1][1]*x[1] - b[1];
+ return r[0]*r[0] + r[1]*r[1];
+}
+
+int invert_3x3( double A[3][3], double iA[3][3] ){
+ double det;
+
+ det = A[0][0]*(A[2][2]*A[1][1]-A[2][1]*A[1][2])
+ - A[1][0]*(A[2][2]*A[0][1]-A[2][1]*A[0][2])
+ + A[2][0]*(A[1][2]*A[0][1]-A[1][1]*A[0][2]);
+ if( fabs(det) < SOLVE_EPSILON )
+  return SOLVE_FAILURE;
+
+ iA[0][0] =  (A[2][2]*A[1][1]-A[2][1]*A[1][2])/det;
+ iA[0][1] = -(A[2][2]*A[0][1]-A[2][1]*A[0][2])/det;
+ iA[0][2] =  (A[1][2]*A[0][1]-A[1][1]*A[0][2])/det;
+
+ iA[1][0] = -(A[2][2]*A[1][0]-A[2][0]*A[1][2])/det;
+ iA[1][1] =  (A[2][2]*A[0][0]-A[2][0]*A[0][2])/det;
+ iA[1][2] = -(A[1][2]*A[0][0]-A[1][0]*A[0][2])/det;
+
+ iA[2][0] =  (A[2][1]*A[1][0]-A[2][0]*A[1][1])/det;
+ iA[2][1] = -(A[2][1]*A[0][0]-A[2][0]*A[0][1])/det;
+ iA[2][2] =  (A[1][1]*A[0][0]-A[1][0]*A[0][1])/det;
+
+ return SOLVE_SUCCESS;
+}
+
+int solve_3x3( double A[3][3], double x[3], double b[3] ){
+ double iA[3][3];
+
+ if( invert_3x3( A, iA ) )
+  return SOLVE_FAILURE;
+
+ x[0] = iA[0][0]*b[0] + iA[0][1]*b[1] + iA[0][2]*b[2];
+ x[1] = iA[1][0]*b[0] + iA[1][1]*b[1] + iA[1][2]*b[2];
+ x[2] = iA[2][0]*b[0] + iA[2][1]*b[1] + iA[2][2]*b[2];
+
+ return SOLVE_SUCCESS;
+}
+
+double residual_3x3( double A[3][3], double x[3], double b[3] ){
+ double r[3];
+ r[0] = A[0][0]*x[0] + A[0][1]*x[1] + A[0][2]*x[2] - b[0];
+ r[1] = A[1][0]*x[0] + A[1][1]*x[1] + A[1][2]*x[2] - b[1];
+ r[2] = A[2][0]*x[0] + A[2][1]*x[1] + A[2][2]*x[2] - b[2];
+ return r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+}
+
+/*********** end James Gregson's matrix code **************************/
 
 #define DEGREES_PER_RADIAN (180 / 3.14159265358979323846)
 #define RADIANS_PER_DEGREE (1 / DEGREES_PER_RADIAN)
@@ -50,8 +219,84 @@
 #define D50_WHITE_REF_Y   1.000000000
 #define D50_WHITE_REF_Z   0.824905400
 
+static double babl_get_colorants (double colorants[3][3]);
 
-int init (void);
+static double babl_get_inverse_colorants (double inverse_colorants[3][3]);
+
+static double babl_get_colorants (double colorants[3][3])
+{
+  colorants[0][0] = SRGB_RED_X;
+  colorants[0][1] = SRGB_GREEN_X;
+  colorants[0][2] = SRGB_BLUE_X;
+
+  colorants[1][0] = SRGB_RED_Y;
+  colorants[1][1] = SRGB_GREEN_Y;
+  colorants[1][2] = SRGB_GREEN_Z;
+
+  colorants[2][0] = SRGB_RED_Z;
+  colorants[2][1] = SRGB_BLUE_Y;
+  colorants[2][2] = SRGB_BLUE_Z;
+  /** Uncomment the code below to print colorants to screen:
+  printf("babl CIE.c: #define sRGB colorants[0][0]=%.8f\n", colorants[0][0]);
+  printf("babl CIE.c: #define sRGB colorants[0][1]=%.8f\n", colorants[0][1]);
+  printf("babl CIE.c: #define sRGB colorants[0][2]=%.8f\n", colorants[0][2]);
+  printf("babl CIE.c: #define sRGB colorants[1][0]=%.8f\n", colorants[1][0]);
+  printf("babl CIE.c: #define sRGB colorants[1][1]=%.8f\n", colorants[1][1]);
+  printf("babl CIE.c: #define sRGB colorants[1][2]=%.8f\n", colorants[1][2]);
+  printf("babl CIE.c: #define sRGB colorants[2][0]=%.8f\n", colorants[2][0]);
+  printf("babl CIE.c: #define sRGB colorants[2][1]=%.8f\n", colorants[2][1]);
+  printf("babl CIE.c: #define sRGB colorants[2][2]=%.8f\n", colorants[2][2]);*/
+
+  if ( colorant_babl != NULL) /* Does this still work once colorant_babl
+  has been used the first time? Probably not. Does it need to? */
+  {
+    double *new_colorant_data = babl_get_user_data (colorant_babl);
+    colorants[0][0] = new_colorant_data[0];
+    colorants[0][1] = new_colorant_data[3];
+    colorants[0][2] = new_colorant_data[6];
+
+    colorants[1][0] = new_colorant_data[1];
+    colorants[1][1] = new_colorant_data[4];
+    colorants[1][2] = new_colorant_data[7];
+
+    colorants[2][0] = new_colorant_data[2];
+    colorants[2][1] = new_colorant_data[5];
+    colorants[2][2] = new_colorant_data[8];
+    /** Uncomment the code below to print colorants to screen:
+    printf("babl CIE.c: colorants[0][0]=%.8f\n", colorants[0][0]);
+    printf("babl CIE.c: colorants[0][1]=%.8f\n", colorants[0][1]);
+    printf("babl CIE.c: colorants[0][2]=%.8f\n", colorants[0][2]);
+    printf("babl CIE.c: colorants[1][0]=%.8f\n", colorants[1][0]);
+    printf("babl CIE.c: colorants[1][1]=%.8f\n", colorants[1][1]);
+    printf("babl CIE.c: colorants[1][2]=%.8f\n", colorants[1][2]);
+    printf("babl CIE.c: colorants[2][0]=%.8f\n", colorants[2][0]);
+    printf("babl CIE.c: colorants[2][1]=%.8f\n", colorants[2][1]);
+    printf("babl CIE.c: colorants[2][2]=%.8f\n", colorants[2][2]); */
+    }
+
+  return colorants[3][3];
+}
+
+static double babl_get_inverse_colorants (double inverse_colorants[3][3])
+{
+  double colorants[3][3];
+  babl_get_colorants (colorants);
+
+  invert_3x3( colorants, inverse_colorants );
+  /** Uncomment the code below to print colorants to screen:
+  printf("babl CIE.c: inverse_colorants[0][0]=%.8f\n", inverse_colorants[0][0]);
+  printf("babl CIE.c: inverse_colorants[0][1]=%.8f\n", inverse_colorants[0][1]);
+  printf("babl CIE.c: inverse_colorants[0][2]=%.8f\n", inverse_colorants[0][2]);
+  printf("babl CIE.c: inverse_colorants[1][0]=%.8f\n", inverse_colorants[1][0]);
+  printf("babl CIE.c: inverse_colorants[1][1]=%.8f\n", inverse_colorants[1][1]);
+  printf("babl CIE.c: inverse_colorants[1][2]=%.8f\n", inverse_colorants[1][2]);
+  printf("babl CIE.c: inverse_colorants[2][0]=%.8f\n", inverse_colorants[2][0]);
+  printf("babl CIE.c: inverse_colorants[2][1]=%.8f\n", inverse_colorants[2][1]);
+  printf("babl CIE.c: inverse_colorants[2][2]=%.8f\n", inverse_colorants[2][2]); */
+
+  return inverse_colorants[3][3];
+}
+
 
 static void types (void);
 static void components (void);
@@ -59,8 +304,9 @@ static void models (void);
 static void conversions (void);
 static void formats (void);
 
-int
-init (void)
+int init (void);
+
+int init (void)
 {
   types ();
   components ();
@@ -68,6 +314,25 @@ init (void)
   formats ();
   conversions ();
   return 0;
+}
+
+static void  rgbcie_init (void);
+
+static void
+rgbxyzrgb_init (void)
+{
+}
+
+static void
+rgbcie_init (void)
+{
+  static int initialized = 0;
+
+  if (!initialized)
+    {
+      rgbxyzrgb_init ();
+      initialized = 1;
+    }
 }
 
 static void
@@ -78,9 +343,6 @@ components (void)
   babl_component_new ("CIE b", "chroma", NULL);
   babl_component_new ("CIE C(ab)", "chroma", NULL);
   babl_component_new ("CIE H(ab)", "chroma", NULL);
-  /* babl_component_new ("CIE X", NULL);
-  babl_component_new ("CIE Y", NULL);
-  babl_component_new ("CIE Z", NULL);*/
 }
 
 static void
@@ -115,15 +377,10 @@ models (void)
     babl_component ("CIE H(ab)"),
     babl_component ("A"),
     NULL);
-  /*babl_model_new (
-    "name", "CIE XYZ",
-    babl_component ("CIE X"),
-    babl_component ("CIE Y"),
-    babl_component ("CIE Z"),
-    NULL);*/
 }
 
-static void  rgbcie_init (void);
+
+/******** begin double RGB/CIE color space conversions ****************/
 
 static inline void  ab_to_CHab    (double  a,
                                    double  b,
@@ -164,6 +421,117 @@ static inline void XYZ_to_RGB     (double X,
                                    double *to_R,
                                    double *to_G,
                                    double *to_B);
+
+static inline void
+RGB_to_XYZ (double R,
+            double G,
+            double B,
+            double *to_X,
+            double *to_Y,
+            double *to_Z)
+{
+  double colorants[3][3];
+  babl_get_colorants (colorants);
+
+  /* Convert RGB to XYZ */
+  *to_X = colorants[0][0]*R
+        + colorants[0][1]*G
+        + colorants[0][2]*B;
+
+  *to_Y = colorants[1][0]*R
+        + colorants[1][1]*G
+        + colorants[1][2]*B;
+
+  *to_Z = colorants[2][0]*R
+        + colorants[2][1]*G
+        + colorants[2][2]*B;
+}
+
+static inline void
+XYZ_to_RGB (double X,
+            double Y,
+            double Z,
+            double *to_R,
+            double *to_G,
+            double *to_B)
+{
+  double inverse_colorants[3][3];
+  babl_get_inverse_colorants (inverse_colorants);
+  /* Convert XYZ to RGB */
+  *to_R = inverse_colorants[0][0]*X
+        + inverse_colorants[0][1]*Y
+        + inverse_colorants[0][2]*Z;
+
+  *to_G = inverse_colorants[1][0]*X
+        + inverse_colorants[1][1]*Y
+        + inverse_colorants[1][2]*Z;
+
+  *to_B = inverse_colorants[2][0]*X
+        + inverse_colorants[2][1]*Y
+        + inverse_colorants[2][2]*Z;
+}
+
+static inline void
+XYZ_to_LAB (double X,
+            double Y,
+            double Z,
+            double *to_L,
+            double *to_a,
+            double *to_b)
+{
+  double f_x, f_y, f_z;
+
+  double x_r = X / D50_WHITE_REF_X;
+  double y_r = Y / D50_WHITE_REF_Y;
+  double z_r = Z / D50_WHITE_REF_Z;
+
+  if (x_r > LAB_EPSILON) f_x = pow(x_r, 1.0 / 3.0);
+  else ( f_x = ((LAB_KAPPA * x_r) + 16) / 116.0 );
+
+  if (y_r > LAB_EPSILON) f_y = pow(y_r, 1.0 / 3.0);
+  else ( f_y = ((LAB_KAPPA * y_r) + 16) / 116.0 );
+
+  if (z_r > LAB_EPSILON) f_z = pow(z_r, 1.0 / 3.0);
+  else ( f_z = ((LAB_KAPPA * z_r) + 16) / 116.0 );
+
+  *to_L = (116.0 * f_y) - 16.0;
+  *to_a = 500.0 * (f_x - f_y);
+  *to_b = 200.0 * (f_y - f_z);
+}
+
+static inline void
+LAB_to_XYZ (double L,
+            double a,
+            double b,
+            double *to_X,
+            double *to_Y,
+            double *to_Z)
+{
+  double fy, fx, fz, fx_cubed, fy_cubed, fz_cubed;
+  double xr, yr, zr;
+
+  fy = (L + 16.0) / 116.0;
+  fy_cubed = fy*fy*fy;
+
+  fz = fy - (b / 200.0);
+  fz_cubed = fz*fz*fz;
+
+  fx = (a / 500.0) + fy;
+  fx_cubed = fx*fx*fx;
+
+  if (fx_cubed > LAB_EPSILON) xr = fx_cubed;
+  else xr = ((116.0 * fx) - 16) / LAB_KAPPA;
+
+  if ( L > (LAB_KAPPA * LAB_EPSILON) ) yr = fy_cubed;
+  else yr = (L / LAB_KAPPA);
+
+  if (fz_cubed > LAB_EPSILON) zr = fz_cubed;
+  else zr = ( (116.0 * fz) - 16 ) / LAB_KAPPA;
+
+  *to_X = xr * D50_WHITE_REF_X;
+  *to_Y = yr * D50_WHITE_REF_Y;
+  *to_Z = zr * D50_WHITE_REF_Z;
+}
 
 static long
 rgba_to_lab (char *src,
@@ -221,7 +589,6 @@ lab_to_rgba (char *src,
     }
   return n;
 }
-
 
 static long
 rgba_to_laba (char *src,
@@ -304,8 +671,7 @@ ab_to_CHab (double  a,
 
   // Keep H within the range 0-360
   if (*to_H < 0.0)
-    *to_H += 360;
-
+      *to_H += 360;
 }
 
 static long
@@ -322,10 +688,10 @@ rgba_to_lchab (char *src,
 
       //convert RGB to XYZ
       RGB_to_XYZ (R, G, B, &X, &Y, &Z);
-      
+
       //convert XYZ to Lab
       XYZ_to_LAB (X, Y, Z, &L, &a, &b);
-      
+
       //convert Lab to LCH(ab)
       ab_to_CHab (a, b, &C, &H);
 
@@ -350,13 +716,13 @@ lchab_to_rgba (char *src,
       double C = ((double *) src)[1];
       double H = ((double *) src)[2];
       double a, b, X, Y, Z, R, G, B;
-      
+
       //Convert LCH(ab) to Lab
       CHab_to_ab (C, H, &a, &b);
-      
+
       //Convert LAB to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
-      
+
       //Convert XYZ to RGB
       XYZ_to_RGB (X, Y, Z, &R, &G, &B);
 
@@ -387,10 +753,10 @@ rgba_to_lchaba (char *src,
 
       //convert RGB to XYZ
       RGB_to_XYZ (R, G, B, &X, &Y, &Z);
-      
+
       //convert XYZ to Lab
       XYZ_to_LAB (X, Y, Z, &L, &a, &b);
-      
+
       //convert Lab to LCH(ab)
       ab_to_CHab (a, b, &C, &H);
 
@@ -417,16 +783,16 @@ lchaba_to_rgba (char *src,
       double H     = ((double *) src)[2];
       double alpha = ((double *) src)[3];
       double a, b, X, Y, Z, R, G, B;
-      
+
       //Convert LCH(ab) to Lab
       CHab_to_ab (C, H, &a, &b);
-      
+
       //Convert Lab to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
-      
+
       //Convert XYZ to RGB
       XYZ_to_RGB (X, Y, Z, &R, &G, &B);
-      
+
       ((double *) dst)[0] = R;
       ((double *) dst)[1] = G;
       ((double *) dst)[2] = B;
@@ -437,6 +803,12 @@ lchaba_to_rgba (char *src,
     }
   return n;
 }
+
+
+/******** end double RGB/CIE color space conversions ******************/
+
+
+/******** begin floating point RGB/CIE color space conversions ********/
 
 static inline float
 cubef (float f)
@@ -473,6 +845,8 @@ rgbf_to_Labf (float *src,
               long   samples)
 {
   long n = samples;
+  double colorants[3][3];
+  babl_get_colorants (colorants);
 
   while (n--)
     {
@@ -480,9 +854,17 @@ rgbf_to_Labf (float *src,
       float g = src[1];
       float b = src[2];
 
-      float xr = 0.43603516f / D50_WHITE_REF_X * r + 0.38511658f / D50_WHITE_REF_X * g + 0.14305115f / D50_WHITE_REF_X * b;
-      float yr = 0.22248840f / D50_WHITE_REF_Y * r + 0.71690369f / D50_WHITE_REF_Y * g + 0.06060791f / D50_WHITE_REF_Y * b;
-      float zr = 0.01391602f / D50_WHITE_REF_Z * r + 0.09706116f / D50_WHITE_REF_Z * g + 0.71392822f / D50_WHITE_REF_Z * b;
+      float xr = colorants[0][0] / D50_WHITE_REF_X * r
+               + colorants[0][1] / D50_WHITE_REF_X * g
+               + colorants[0][2] / D50_WHITE_REF_X * b;
+
+      float yr = colorants[1][0]/ D50_WHITE_REF_Y * r
+               + colorants[1][1] / D50_WHITE_REF_Y * g
+               + colorants[1][2] / D50_WHITE_REF_Y * b;
+
+      float zr = colorants[2][0] / D50_WHITE_REF_Z * r
+               + colorants[2][1] / D50_WHITE_REF_Z * g
+               + colorants[2][2] / D50_WHITE_REF_Z * b;
 
       float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
       float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
@@ -509,6 +891,8 @@ rgbaf_to_Labaf (float *src,
                 long   samples)
 {
   long n = samples;
+  double colorants[3][3];
+  babl_get_colorants (colorants);
 
   while (n--)
     {
@@ -517,9 +901,17 @@ rgbaf_to_Labaf (float *src,
       float b = src[2];
       float a = src[3];
 
-      float xr = 0.43603516f / D50_WHITE_REF_X * r + 0.38511658f / D50_WHITE_REF_X * g + 0.14305115f / D50_WHITE_REF_X * b;
-      float yr = 0.22248840f / D50_WHITE_REF_Y * r + 0.71690369f / D50_WHITE_REF_Y * g + 0.06060791f / D50_WHITE_REF_Y * b;
-      float zr = 0.01391602f / D50_WHITE_REF_Z * r + 0.09706116f / D50_WHITE_REF_Z * g + 0.71392822f / D50_WHITE_REF_Z * b;
+      float xr = colorants[0][0] / D50_WHITE_REF_X * r
+               + colorants[0][1] / D50_WHITE_REF_X * g
+               + colorants[0][2] / D50_WHITE_REF_X * b;
+
+      float yr = colorants[1][0]/ D50_WHITE_REF_Y * r
+               + colorants[1][1] / D50_WHITE_REF_Y * g
+               + colorants[1][2] / D50_WHITE_REF_Y * b;
+
+      float zr = colorants[2][0] / D50_WHITE_REF_Z * r
+               + colorants[2][1] / D50_WHITE_REF_Z * g
+               + colorants[2][2] / D50_WHITE_REF_Z * b;
 
       float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
       float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
@@ -547,6 +939,8 @@ Labf_to_rgbf (float *src,
                 long   samples)
 {
   long n = samples;
+  double inverse_colorants[3][3];
+  babl_get_inverse_colorants (inverse_colorants);
 
   while (n--)
     {
@@ -562,9 +956,17 @@ Labf_to_rgbf (float *src,
       float xr = cubef (fx) > LAB_EPSILON ? cubef (fx) : (fx * 116.0f - 16.0f) / LAB_KAPPA;
       float zr = cubef (fz) > LAB_EPSILON ? cubef (fz) : (fz * 116.0f - 16.0f) / LAB_KAPPA;
 
-      float r =  3.134274799724f * D50_WHITE_REF_X * xr -1.617275708956f * D50_WHITE_REF_Y * yr -0.490724283042f * D50_WHITE_REF_Z * zr;
-      float g = -0.978795575994f * D50_WHITE_REF_X * xr +1.916161689117f * D50_WHITE_REF_Y * yr +0.033453331711f * D50_WHITE_REF_Z * zr;
-      float b =  0.071976988401f * D50_WHITE_REF_X * xr -0.228984974402f * D50_WHITE_REF_Y * yr +1.405718224383f * D50_WHITE_REF_Z * zr;
+      float r =  inverse_colorants[0][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[0][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[0][2] * D50_WHITE_REF_Z * zr;
+
+      float g =  inverse_colorants[1][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[1][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[1][2] * D50_WHITE_REF_Z * zr;
+
+      float b =  inverse_colorants[2][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[2][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[2][2] * D50_WHITE_REF_Z * zr;
 
       dst[0] = r;
       dst[1] = g;
@@ -583,6 +985,8 @@ Labaf_to_rgbaf (float *src,
                 long   samples)
 {
   long n = samples;
+  double inverse_colorants[3][3];
+  babl_get_inverse_colorants (inverse_colorants);
 
   while (n--)
     {
@@ -599,9 +1003,17 @@ Labaf_to_rgbaf (float *src,
       float xr = cubef (fx) > LAB_EPSILON ? cubef (fx) : (fx * 116.0f - 16.0f) / LAB_KAPPA;
       float zr = cubef (fz) > LAB_EPSILON ? cubef (fz) : (fz * 116.0f - 16.0f) / LAB_KAPPA;
 
-      float r =  3.134274799724f * D50_WHITE_REF_X * xr -1.617275708956f * D50_WHITE_REF_Y * yr -0.490724283042f * D50_WHITE_REF_Z * zr;
-      float g = -0.978795575994f * D50_WHITE_REF_X * xr +1.916161689117f * D50_WHITE_REF_Y * yr +0.033453331711f * D50_WHITE_REF_Z * zr;
-      float b =  0.071976988401f * D50_WHITE_REF_X * xr -0.228984974402f * D50_WHITE_REF_Y * yr +1.405718224383f * D50_WHITE_REF_Z * zr;
+      float r =  inverse_colorants[0][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[0][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[0][2] * D50_WHITE_REF_Z * zr;
+
+      float g =  inverse_colorants[1][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[1][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[1][2] * D50_WHITE_REF_Z * zr;
+
+      float b =  inverse_colorants[2][0] * D50_WHITE_REF_X * xr
+               + inverse_colorants[2][1] * D50_WHITE_REF_Y * yr
+               + inverse_colorants[2][2] * D50_WHITE_REF_Z * zr;
 
       dst[0] = r;
       dst[1] = g;
@@ -696,18 +1108,6 @@ conversions (void)
     "linear", lchaba_to_rgba,
     NULL
   );
-  /*babl_conversion_new (
-    babl_model ("RGBA"),
-    babl_model ("CIE XYZ"),
-    "linear", RGB_to_XYZ,
-    NULL
-  );
-  babl_conversion_new (
-    babl_model ("CIE XYZ"),
-    babl_model ("RGBA"),
-    "linear", XYZ_to_RGB,
-    NULL
-  );*/
 
   rgbcie_init ();
 }
@@ -724,16 +1124,6 @@ formats (void)
     babl_component ("CIE a"),
     babl_component ("CIE b"),
     NULL);
-    
-  /*babl_format_new (
-    "name", "CIE XYZ float",
-    babl_model ("CIE XYZ"),
-
-    babl_type ("float"),
-    babl_component ("CIE X"),
-    babl_component ("CIE Y"),
-    babl_component ("CIE Z"),
-    NULL);*/
 
   babl_format_new (
     "name", "CIE Lab alpha float",
@@ -778,7 +1168,6 @@ formats (void)
     babl_component ("CIE b"),
     NULL);
 
-
   babl_format_new (
     "name", "CIE LCH(ab) float",
     babl_model ("CIE LCH(ab)"),
@@ -801,6 +1190,11 @@ formats (void)
     NULL);
 }
 
+
+/******** end floating point RGB/CIE color space conversions **********/
+
+
+/******** begin  integer RGB/CIE color space conversions **************/
 
 static inline long
 convert_double_u8_scaled (double        min_val,
@@ -1088,151 +1482,4 @@ types (void)
   types_u16 ();
 }
 
-
-static void
-rgbxyzrgb_init (void)
-{
-}
-
-static inline void
-RGB_to_XYZ (double R,
-            double G,
-            double B,
-            double *to_X,
-            double *to_Y,
-            double *to_Z)
-{
-  double RGBtoXYZ[3][3];
-
-/*
- * The variables below hard-code the D50-adapted sRGB RGB to XYZ matrix.
- *
- * In a properly ICC profile color-managed application, this matrix
- * is retrieved from the image's ICC profile's RGB colorants.
- *
- * */
-  RGBtoXYZ[0][0]= 0.43603516;
-  RGBtoXYZ[0][1]= 0.38511658;
-  RGBtoXYZ[0][2]= 0.14305115;
-  RGBtoXYZ[1][0]= 0.22248840;
-  RGBtoXYZ[1][1]= 0.71690369;
-  RGBtoXYZ[1][2]= 0.06060791;
-  RGBtoXYZ[2][0]= 0.01391602;
-  RGBtoXYZ[2][1]= 0.09706116;
-  RGBtoXYZ[2][2]= 0.71392822;
-
-/* Convert RGB to XYZ */
-  *to_X = RGBtoXYZ[0][0]*R + RGBtoXYZ[0][1]*G + RGBtoXYZ[0][2]*B;
-  *to_Y = RGBtoXYZ[1][0]*R + RGBtoXYZ[1][1]*G + RGBtoXYZ[1][2]*B;
-  *to_Z = RGBtoXYZ[2][0]*R + RGBtoXYZ[2][1]*G + RGBtoXYZ[2][2]*B;
-
-}
-
-static inline void
-XYZ_to_RGB (double X,
-            double Y,
-            double Z,
-            double *to_R,
-            double *to_G,
-            double *to_B)
-{
-  double XYZtoRGB[3][3];
-
-/*
- * The variables below hard-code the inverse of
- * the D50-adapted sRGB RGB to XYZ matrix.
- *
- * In a properly ICC profile color-managed application,
- * this matrix is the inverse of the matrix
- * retrieved from the image's ICC profile's RGB colorants.
- *
- */
-  XYZtoRGB[0][0]=  3.134274799724;
-  XYZtoRGB[0][1]= -1.617275708956;
-  XYZtoRGB[0][2]= -0.490724283042;
-  XYZtoRGB[1][0]= -0.978795575994;
-  XYZtoRGB[1][1]=  1.916161689117;
-  XYZtoRGB[1][2]=  0.033453331711;
-  XYZtoRGB[2][0]=  0.071976988401;
-  XYZtoRGB[2][1]= -0.228984974402;
-  XYZtoRGB[2][2]=  1.405718224383;
-
-/* Convert XYZ to RGB */
-  *to_R = XYZtoRGB[0][0] * X + XYZtoRGB[0][1] * Y + XYZtoRGB[0][2] * Z;
-  *to_G = XYZtoRGB[1][0] * X + XYZtoRGB[1][1] * Y + XYZtoRGB[1][2] * Z;
-  *to_B = XYZtoRGB[2][0] * X + XYZtoRGB[2][1] * Y + XYZtoRGB[2][2] * Z;
-}
-
-static inline void
-XYZ_to_LAB (double X,
-            double Y,
-            double Z,
-            double *to_L,
-            double *to_a,
-            double *to_b)
-{
-  double f_x, f_y, f_z;
-  
-  double x_r = X / D50_WHITE_REF_X;
-  double y_r = Y / D50_WHITE_REF_Y;
-  double z_r = Z / D50_WHITE_REF_Z;
-
-  if (x_r > LAB_EPSILON) f_x = pow(x_r, 1.0 / 3.0);
-  else ( f_x = ((LAB_KAPPA * x_r) + 16) / 116.0 );
-
-  if (y_r > LAB_EPSILON) f_y = pow(y_r, 1.0 / 3.0);
-  else ( f_y = ((LAB_KAPPA * y_r) + 16) / 116.0 );
-
-  if (z_r > LAB_EPSILON) f_z = pow(z_r, 1.0 / 3.0);
-  else ( f_z = ((LAB_KAPPA * z_r) + 16) / 116.0 );
-
-  *to_L = (116.0 * f_y) - 16.0;
-  *to_a = 500.0 * (f_x - f_y);
-  *to_b = 200.0 * (f_y - f_z);
-}
-
-static inline void
-LAB_to_XYZ (double L,
-            double a,
-            double b,
-            double *to_X,
-            double *to_Y,
-            double *to_Z)
-{
-  double fy, fx, fz, fx_cubed, fy_cubed, fz_cubed;
-  double xr, yr, zr;
-
-  fy = (L + 16.0) / 116.0;
-  fy_cubed = fy*fy*fy;
-
-  fz = fy - (b / 200.0);
-  fz_cubed = fz*fz*fz;
-
-  fx = (a / 500.0) + fy;
-  fx_cubed = fx*fx*fx;
-
-  if (fx_cubed > LAB_EPSILON) xr = fx_cubed;
-  else xr = ((116.0 * fx) - 16) / LAB_KAPPA;
-
-  if ( L > (LAB_KAPPA * LAB_EPSILON) ) yr = fy_cubed;
-  else yr = (L / LAB_KAPPA);
-
-  if (fz_cubed > LAB_EPSILON) zr = fz_cubed;
-  else zr = ( (116.0 * fz) - 16 ) / LAB_KAPPA;
-
-  *to_X = xr * D50_WHITE_REF_X;
-  *to_Y = yr * D50_WHITE_REF_Y;
-  *to_Z = zr * D50_WHITE_REF_Z;
-}
-
-static void
-rgbcie_init (void)
-{
-  static int initialized = 0;
-
-  if (!initialized)
-    {
-      rgbxyzrgb_init ();
-      initialized = 1;
-    }
-}
+/******** end  integer RGB/CIE color space conversions ****************/

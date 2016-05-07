@@ -301,6 +301,7 @@ void  babl_palette_reset       (const Babl        *babl);
  * similar with the data, perhaps this should be made internal API, not
  * accesible at all from
  */
+
 void   babl_set_user_data     (const Babl *babl, void *data);
 
 /**
@@ -310,6 +311,52 @@ void   babl_set_user_data     (const Babl *babl, void *data);
  */
 void * babl_get_user_data     (const Babl *babl);
 
+/**
+void babl_elles_rgb (
+  Babl *babl,
+  const char *name,
+  double red_xyz[3],
+  double blue_xyz[3],
+  double green_xyz[3]
+);
+
+void babl_elles_int (
+  const Babl *babl,
+  int rgb_id
+);*/
+
+/**babl_process (babl_fish (source_format, destination_format),
+              source_buffer,
+              destination_buffer,
+              colorant_matrix,
+              pixel_count);*/
+
+#ifndef COLORANTS_H
+#define COLORANTS_H
+extern const Babl *colorant_babl;
+extern double *colorant_data;
+#endif
+
+#define RGB_LUMINANCE_RED    (0.22248840)
+#define RGB_LUMINANCE_GREEN  (0.71690369)
+#define RGB_LUMINANCE_BLUE   (0.06060791)
+
+/*
+ * Following are D50-adapted ICC profile sRGB colorants, which match
+ * the colorants in the GIMP and GEGL built-in sRGB profiles.
+ * */
+
+#define SRGB_RED_X    (0.43603516)
+#define SRGB_RED_Y    (0.22248840)
+#define SRGB_RED_Z    (0.01391602)
+
+#define SRGB_GREEN_X  (0.38511658)
+#define SRGB_GREEN_Y  (0.71690369)
+#define SRGB_GREEN_Z  (0.09706116)
+
+#define SRGB_BLUE_X   (0.14305115)
+#define SRGB_BLUE_Y   (0.06060791)
+#define SRGB_BLUE_Z   (0.71392822)
 
 
 /*

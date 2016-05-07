@@ -18,12 +18,12 @@
 
 #include "config.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "babl-classes.h"
 #include "babl.h"
 #include "babl-ids.h"
 #include "util.h"
-#include "rgb-constants.h"
 #include "math.h"
 #include "babl-base.h"
 
@@ -32,12 +32,38 @@ static void models (void);
 static void conversions (void);
 static void formats (void);
 
+/** Set global variables for passing colorant information
+ * from GIMP to babl */
+const Babl *colorant_babl;
+double *colorant_data;
+
 void babl_base_model_gray (void)
 {
   components ();
   models ();
   conversions ();
   formats ();
+}
+
+static double babl_get_Y (double Y[3])
+{
+  Y[0] = SRGB_RED_Y;
+  Y[1] = SRGB_GREEN_Y;
+  Y[2] = SRGB_BLUE_Y;
+
+  if ( colorant_babl != NULL) /* Does this still work once colorant_babl
+  has been used the first time? Probably not. Does it need to? */
+    {
+      double *new_colorant_data = babl_get_user_data (colorant_babl);
+      //printf ("babl model-gray.c 1: babl_get_user_data\n");
+
+      Y[0] = new_colorant_data[1];
+      Y[1] = new_colorant_data[4];
+      Y[2] = new_colorant_data[7];
+      //printf("babl model-gray.c 2: \nrY=%.8f gY=%.8f bY:%.8f\n\n", Y[0], Y[1], Y[2]);
+    }
+
+  return Y[3];
 }
 
 static void
@@ -114,6 +140,9 @@ rgba_to_graya (char *src,
                char *dst,
                long  n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+  //printf("babl model-gray.c 3: \nrY=%.8f gY=%.8f bY:%.8f\n", Y[0], Y[1], Y[2]);
   while (n--)
     {
       double red, green, blue;
@@ -124,9 +153,9 @@ rgba_to_graya (char *src,
       blue  = ((double *) src)[2];
       alpha = ((double *) src)[3];
 
-      luminance = red * RGB_LUMINANCE_RED +
-                  green * RGB_LUMINANCE_GREEN +
-                  blue * RGB_LUMINANCE_BLUE;
+      luminance = red * Y[0] +
+                  green * Y[1] +
+                  blue * Y[2];
 
       ((double *) dst)[0] = luminance;
       ((double *) dst)[1] = alpha;
@@ -142,6 +171,9 @@ rgba_to_gray (char *src,
               char *dst,
               long  n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+
   while (n--)
     {
       double red, green, blue;
@@ -151,9 +183,9 @@ rgba_to_gray (char *src,
       green = ((double *) src)[1];
       blue  = ((double *) src)[2];
 
-      luminance = red * RGB_LUMINANCE_RED +
-                  green * RGB_LUMINANCE_GREEN +
-                  blue * RGB_LUMINANCE_BLUE;
+      luminance = red * Y[0] +
+                  green * Y[1] +
+                  blue * Y[2];
 
       ((double *) dst)[0] = luminance;
 
@@ -173,6 +205,9 @@ rgb_to_gray_2_2 (int    src_bands,
                  int   *dst_pitch,
                  long   n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+
   BABL_PLANAR_SANITY
   while (n--)
     {
@@ -187,9 +222,9 @@ rgb_to_gray_2_2 (int    src_bands,
       else
         alpha = 1.0;
 
-      luminance = red * RGB_LUMINANCE_RED +
-                  green * RGB_LUMINANCE_GREEN +
-                  blue * RGB_LUMINANCE_BLUE;
+      luminance = red * Y[0] +
+                  green * Y[1] +
+                  blue * Y[2];
       *(double *) dst[0] = linear_to_gamma_2_2 (luminance);
 
       if (dst_bands == 2)
@@ -274,6 +309,9 @@ gray_to_rgba (char *src,
               char *dst,
               long  n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+
   while (n--)
     {
       double luminance;
@@ -341,6 +379,9 @@ rgba_to_gray_alpha_premultiplied (int    src_bands,
                                   int   *dst_pitch,
                                   long   n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+
   BABL_PLANAR_SANITY;
   assert (src_bands == 4);
   assert (dst_bands == 2);
@@ -353,9 +394,9 @@ rgba_to_gray_alpha_premultiplied (int    src_bands,
       double alpha = *(double *) src[3];
       double luminance;
 
-      luminance = red * RGB_LUMINANCE_RED +
-                  green * RGB_LUMINANCE_GREEN +
-                  blue * RGB_LUMINANCE_BLUE;
+      luminance = red * Y[0] +
+                  green * Y[1] +
+                  blue * Y[2];
 
       luminance *= alpha;
 
@@ -434,6 +475,9 @@ rgba2gray_gamma_2_2_premultiplied (char *src,
                                    char *dst,
                                    long  n)
 {
+  double Y[3];
+  babl_get_Y (Y);
+
   while (n--)
     {
       double red   = ((double *) src)[0];
@@ -444,9 +488,9 @@ rgba2gray_gamma_2_2_premultiplied (char *src,
       double luminance;
       double luma;
 
-      luminance = red * RGB_LUMINANCE_RED +
-                  green * RGB_LUMINANCE_GREEN +
-                  blue * RGB_LUMINANCE_BLUE;
+      luminance = red * Y[0] +
+                  green * Y[1] +
+                  blue * Y[2];
       luma = linear_to_gamma_2_2 (luminance);
 
       ((double *) dst)[0] = luma * alpha;

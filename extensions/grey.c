@@ -17,44 +17,52 @@
  */
 
 #include "config.h"
+#include <stdlib.h>
 #include <stdio.h>
 
-#include "babl.h"
+#include "babl/babl.h"
 
 #include "base/util.h"
-#include "base/rgb-constants.h"
 #include "extensions/util.h"
 
-/* There was some debate on #gimp about whether these constants
- * are accurate, for now I've elected to just follow whatever
- * babl/base does.
- *   - Daniel
- */
+static double babl_get_Y (double Y[3])
+{
+  Y[0] = SRGB_RED_Y;
+  Y[1] = SRGB_GREEN_Y;
+  Y[2] = SRGB_BLUE_Y;
 
-/* Float versions of the double constants in rgb-constants.h */
-static const float RGB_LUMINANCE_RED_FLOAT = RGB_LUMINANCE_RED;
-static const float RGB_LUMINANCE_GREEN_FLOAT = RGB_LUMINANCE_GREEN;
-static const float RGB_LUMINANCE_BLUE_FLOAT = RGB_LUMINANCE_BLUE;
+  if ( colorant_babl != NULL) /* Does this still work once colorant_babl
+  has been used the first time? Probably not. Does it need to? */
+    {
+      double *new_colorant_data = babl_get_user_data (colorant_babl);
+      //printf ("babl grey.c 1: babl_get_user_data\n");
+
+      Y[0] = new_colorant_data[1];
+      Y[1] = new_colorant_data[4];
+      Y[2] = new_colorant_data[7];
+      //printf("babl grey.c 2: \nrY=%.8f gY=%.8f bY:%.8f\n\n", Y[0], Y[1], Y[2]);
+    }
+
+  return Y[3];
+}
 
 static long
 conv_rgbaF_linear_y8_linear (unsigned char *src,
                              unsigned char *dst,
                              long           samples)
 {
-  static const float RGB_LUMINANCE_RED_FLOAT = RGB_LUMINANCE_RED;
-  static const float RGB_LUMINANCE_GREEN_FLOAT = RGB_LUMINANCE_GREEN;
-  static const float RGB_LUMINANCE_BLUE_FLOAT = RGB_LUMINANCE_BLUE;
-
   float *s = (float *) src;
   long   n = samples;
-
+  double Y[3];
+  babl_get_Y (Y);
+  //printf("babl grey.c 3: \nrY=%.8f gY=%.8f bY:%.8f\n", Y[0], Y[1], Y[2]);
   while (n--)
     {
       float value;
       long int v;
-      value  = *s++ * RGB_LUMINANCE_RED_FLOAT;
-      value += *s++ * RGB_LUMINANCE_GREEN_FLOAT;
-      value += *s++ * RGB_LUMINANCE_BLUE_FLOAT;
+      value  = *s++ * Y[0];
+      value += *s++ * Y[1];
+      value += *s++ * Y[2];
       s++;
 
       v = rint (value * 255.0);
@@ -69,17 +77,18 @@ conv_rgbaF_linear_yF_linear (unsigned char *src,
                              unsigned char *dst,
                              long           samples)
 {
-
   float *s = (float *) src;
   float *d = (float *) dst;
   long   n = samples;
+  double Y[3];
+  babl_get_Y (Y);
 
   while (n--)
     {
       float value;
-      value  = *s++ * RGB_LUMINANCE_RED_FLOAT;
-      value += *s++ * RGB_LUMINANCE_GREEN_FLOAT;
-      value += *s++ * RGB_LUMINANCE_BLUE_FLOAT;
+      value  = *s++ * Y[0];
+      value += *s++ * Y[1];
+      value += *s++ * Y[2];
       s++;
       *d++ = value;
     }
@@ -92,17 +101,18 @@ conv_rgbaF_linear_yaF_linear (unsigned char *src,
                               unsigned char *dst,
                               long           samples)
 {
-
   float *s = (float *) src;
   float *d = (float *) dst;
   long   n = samples;
+  double Y[3];
+  babl_get_Y (Y);
 
   while (n--)
     {
       float value;
-      value  = *s++ * RGB_LUMINANCE_RED_FLOAT;
-      value += *s++ * RGB_LUMINANCE_GREEN_FLOAT;
-      value += *s++ * RGB_LUMINANCE_BLUE_FLOAT;
+      value  = *s++ * Y[0];
+      value += *s++ * Y[1];
+      value += *s++ * Y[2];
       *d++ = value;
       *d++ = *s++;  /* alpha */
     }
