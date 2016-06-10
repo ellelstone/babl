@@ -26,12 +26,12 @@
 #include "extensions/util.h"
 
 static double babl_get_Y (double Y[3])
-{
+{/*printf("babl/extensions/grey.c: babl_get_Y\n");
   Y[0] = SRGB_RED_Y;
   Y[1] = SRGB_GREEN_Y;
   Y[2] = SRGB_BLUE_Y;
 
-  if ( colorant_babl != NULL) /* Does this still work once colorant_babl
+  if ( colorant_babl != NULL)  Does this still work once colorant_babl
   has been used the first time? Probably not. Does it need to? */
     {
       double *new_colorant_data = babl_get_user_data (colorant_babl);
