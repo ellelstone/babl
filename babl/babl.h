@@ -57,8 +57,8 @@ const Babl * babl_type      (const char *name);
  * babl_sampling:
  *
  * Returns the babl object representing the @horizontal and @vertical
- * sampling such as for example 2, 2 for the chroma components in
- * YCbCr.
+ * sampling such as for example 2, 2 for the
+ * chroma components in YCbCr. Elle: note: YCbCr is just in the comment.
  */
 const Babl * babl_sampling  (int horizontal,
                              int vertical);

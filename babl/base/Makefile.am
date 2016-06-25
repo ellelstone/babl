@@ -12,8 +12,7 @@ c_sources =			\
 	type-u16.c		\
 	type-u32.c		\
 	model-rgb.c		\
-	model-gray.c		\
-	model-ycbcr.c
+	model-gray.c
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/babl
 

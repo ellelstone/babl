@@ -160,36 +160,6 @@ babl_formats_init (void)
    * to differing types
    */
   babl_format_new (
-    "name", "Y'CbCr u8",
-    "planar",
-    babl_model_from_id (BABL_YCBCR),
-    babl_type_from_id (BABL_U8_LUMA),
-    babl_sampling (1, 1),
-    babl_component_from_id (BABL_LUMA),
-    babl_type_from_id (BABL_U8_CHROMA),
-    babl_sampling (2, 2),
-    babl_component_from_id (BABL_CB),
-    babl_sampling (2, 2),
-    babl_component_from_id (BABL_CR),
-    NULL);
-  babl_format_new (
-    babl_model_from_id (BABL_YCBCR),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_LUMA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_CB),
-    babl_component_from_id (BABL_CR),
-    NULL);
-  babl_format_new (
-    babl_model_from_id (BABL_YCBCR_ALPHA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_LUMA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_CB),
-    babl_component_from_id (BABL_CR),
-    babl_component_from_id (BABL_ALPHA),
-    NULL);
-  babl_format_new (
     babl_model_from_id (BABL_RGBA),
     babl_type_from_id (BABL_FLOAT),
     babl_component_from_id (BABL_RED),
@@ -318,21 +288,4 @@ babl_formats_init (void)
     babl_component_from_id (BABL_LUMINANCE),
     NULL);
 
-  babl_format_new (
-    babl_model_from_id (BABL_YCBCR),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_LUMA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_CB),
-    babl_component_from_id (BABL_CR),
-    NULL);
-  babl_format_new (
-    babl_model_from_id (BABL_YCBCR_ALPHA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_LUMA),
-    babl_type_from_id (BABL_FLOAT),
-    babl_component_from_id (BABL_CB),
-    babl_component_from_id (BABL_CR),
-    babl_component_from_id (BABL_ALPHA),
-    NULL);
 }
