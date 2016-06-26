@@ -75,7 +75,7 @@ conv_rgbA8_premul_cairo32_le (unsigned char *src, unsigned char *dst, long sampl
 
 static inline long
 conv_rgbA8_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
-{printf("\nbabl/extensions/cairo.c conv_rgbA8_cairo32_le\n");
+{ // yes, used printf("\nbabl/extensions/cairo.c conv_rgbA8_cairo32_le\n");
   long n = samples;
   while (n--)
     {
@@ -94,7 +94,7 @@ conv_rgbA8_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
 static inline unsigned char
 conv_rgbafloat_cairo32_map (float value,
                             float alpha)
-{printf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_map\n");
+{// yes usedprintf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_map\n");
   unsigned short index;
   float result;
   if (value < 0.0)
@@ -111,7 +111,7 @@ static long
 conv_rgbafloat_cairo32_le (unsigned char *src_char,
                            unsigned char *dst,
                            long           samples)
-{printf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_le\n");
+{// yes, used printf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_le\n");
   long   n   = samples;
   float *src = (float*)src_char;
 
@@ -147,7 +147,7 @@ conv_rgbafloat_cairo32_le (unsigned char *src_char,
 
 int
 init (void)
-{printf("\nbabl/extensions/cairo.c init\n");
+{//yes used printf("\nbabl/extensions/cairo.c init\n");
   int   testint  = 23;
   char *testchar = (char*) &testint;
   int   littleendian = (testchar[0] == 23);
