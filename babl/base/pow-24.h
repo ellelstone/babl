@@ -15,11 +15,4 @@
  * Public License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-
-#ifndef _BASE_POW_24_H
-#define _BASE_POW_24_H
-
-extern double babl_pow_1_24 (double x);
-extern double babl_pow_24 (double x);
-
-#endif
+//elle: empty code file
