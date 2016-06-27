@@ -52,27 +52,4 @@
   }
 
 #endif
-/*
-#define BABL_USE_SRGB_GAMMA
 
-#ifdef BABL_USE_SRGB_GAMMA
-static inline double
-linear_to_gamma_2_2 (double value)
-{ return value;}
-
-static inline double
-gamma_2_2_to_linear (double value)
-{ return value;}
-static inline double
-babl_linear_to_gamma_2_2 (double value)
-{ return value;}
-
-static inline double
-babl_gamma_2_2_to_linear (double value)
-{ return value;}
-
-#else
-  #define linear_to_gamma_2_2(value) value
-  #define gamma_2_2_to_linear(value) value
-#endif
-*/
