@@ -29,7 +29,7 @@ typedef struct
   BablComponent  **component;
   BablType       **type; /*< must be doubles,
                              used here for convenience in code */
-  void            *data; /* used for palette */
+  void            *data; /* used for setting colorants; was used for indexed image palettes */
 } BablModel;
 
 #endif
