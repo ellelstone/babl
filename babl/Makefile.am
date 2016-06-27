@@ -33,7 +33,6 @@ c_sources =				\
 	babl-sanity.c			\
 	babl-type.c			\
 	babl-util.c			\
-	babl-cpuaccel.c			\
 	babl-version.c
 
 h_sources  =				\
@@ -42,7 +41,6 @@ h_sources  =				\
 	babl-classes.h			\
 	babl-component.h		\
 	babl-conversion.h		\
-	babl-cpuaccel.h			\
 	babl-db.h			\
 	babl-extension.h		\
 	babl-fish.h			\

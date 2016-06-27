@@ -127,8 +127,6 @@ babl_dir_list (void)
 void
 babl_init (void)
 {
-  babl_cpu_accel_set_use (1);
-
   if (ref_count++ == 0)
     {
       char * dir_list;
