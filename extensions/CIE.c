@@ -224,55 +224,20 @@ static double babl_get_colorants (double colorants[3][3]);
 static double babl_get_inverse_colorants (double inverse_colorants[3][3]);
 
 static double babl_get_colorants (double colorants[3][3])
-{/** printf("babl/extensions/CIE.c: babl_get_colorants\n");
-  colorants[0][0] = SRGB_RED_X;
-  colorants[0][1] = SRGB_GREEN_X;
-  colorants[0][2] = SRGB_BLUE_X;
+{
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
 
-  colorants[1][0] = SRGB_RED_Y;
-  colorants[1][1] = SRGB_GREEN_Y;
-  colorants[1][2] = SRGB_GREEN_Z;
+  colorants[0][0] = new_colorant_data[0];
+  colorants[0][1] = new_colorant_data[3];
+  colorants[0][2] = new_colorant_data[6];
 
-  colorants[2][0] = SRGB_RED_Z;
-  colorants[2][1] = SRGB_BLUE_Y;
-  colorants[2][2] = SRGB_BLUE_Z;
-  Uncomment the code below to print colorants to screen:
-  printf("babl CIE.c: #define sRGB colorants[0][0]=%.8f\n", colorants[0][0]);
-  printf("babl CIE.c: #define sRGB colorants[0][1]=%.8f\n", colorants[0][1]);
-  printf("babl CIE.c: #define sRGB colorants[0][2]=%.8f\n", colorants[0][2]);
-  printf("babl CIE.c: #define sRGB colorants[1][0]=%.8f\n", colorants[1][0]);
-  printf("babl CIE.c: #define sRGB colorants[1][1]=%.8f\n", colorants[1][1]);
-  printf("babl CIE.c: #define sRGB colorants[1][2]=%.8f\n", colorants[1][2]);
-  printf("babl CIE.c: #define sRGB colorants[2][0]=%.8f\n", colorants[2][0]);
-  printf("babl CIE.c: #define sRGB colorants[2][1]=%.8f\n", colorants[2][1]);
-  printf("babl CIE.c: #define sRGB colorants[2][2]=%.8f\n", colorants[2][2]);*/
+  colorants[1][0] = new_colorant_data[1];
+  colorants[1][1] = new_colorant_data[4];
+  colorants[1][2] = new_colorant_data[7];
 
-/*   if ( colorant_babl != NULL) Does this still work once colorant_babl
-  has been used the first time? Probably not. Does it need to?
-  { */
-    double *new_colorant_data = babl_get_user_data (colorant_babl);
-    colorants[0][0] = new_colorant_data[0];
-    colorants[0][1] = new_colorant_data[3];
-    colorants[0][2] = new_colorant_data[6];
-
-    colorants[1][0] = new_colorant_data[1];
-    colorants[1][1] = new_colorant_data[4];
-    colorants[1][2] = new_colorant_data[7];
-
-    colorants[2][0] = new_colorant_data[2];
-    colorants[2][1] = new_colorant_data[5];
-    colorants[2][2] = new_colorant_data[8];
-    /** Uncomment the code below to print colorants to screen:
-    printf("babl CIE.c: colorants[0][0]=%.8f\n", colorants[0][0]);
-    printf("babl CIE.c: colorants[0][1]=%.8f\n", colorants[0][1]);
-    printf("babl CIE.c: colorants[0][2]=%.8f\n", colorants[0][2]);
-    printf("babl CIE.c: colorants[1][0]=%.8f\n", colorants[1][0]);
-    printf("babl CIE.c: colorants[1][1]=%.8f\n", colorants[1][1]);
-    printf("babl CIE.c: colorants[1][2]=%.8f\n", colorants[1][2]);
-    printf("babl CIE.c: colorants[2][0]=%.8f\n", colorants[2][0]);
-    printf("babl CIE.c: colorants[2][1]=%.8f\n", colorants[2][1]);
-    printf("babl CIE.c: colorants[2][2]=%.8f\n", colorants[2][2]);
-    } */
+  colorants[2][0] = new_colorant_data[2];
+  colorants[2][1] = new_colorant_data[5];
+  colorants[2][2] = new_colorant_data[8];
 
   return colorants[3][3];
 }
@@ -283,16 +248,6 @@ static double babl_get_inverse_colorants (double inverse_colorants[3][3])
   babl_get_colorants (colorants);
 
   invert_3x3( colorants, inverse_colorants );
-  /** Uncomment the code below to print colorants to screen:
-  printf("babl CIE.c: inverse_colorants[0][0]=%.8f\n", inverse_colorants[0][0]);
-  printf("babl CIE.c: inverse_colorants[0][1]=%.8f\n", inverse_colorants[0][1]);
-  printf("babl CIE.c: inverse_colorants[0][2]=%.8f\n", inverse_colorants[0][2]);
-  printf("babl CIE.c: inverse_colorants[1][0]=%.8f\n", inverse_colorants[1][0]);
-  printf("babl CIE.c: inverse_colorants[1][1]=%.8f\n", inverse_colorants[1][1]);
-  printf("babl CIE.c: inverse_colorants[1][2]=%.8f\n", inverse_colorants[1][2]);
-  printf("babl CIE.c: inverse_colorants[2][0]=%.8f\n", inverse_colorants[2][0]);
-  printf("babl CIE.c: inverse_colorants[2][1]=%.8f\n", inverse_colorants[2][1]);
-  printf("babl CIE.c: inverse_colorants[2][2]=%.8f\n", inverse_colorants[2][2]); */
 
   return inverse_colorants[3][3];
 }
