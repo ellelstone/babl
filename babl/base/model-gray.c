@@ -46,22 +46,12 @@ void babl_base_model_gray (void)
 }
 
 static double babl_get_Y (double Y[3])
-{//printf("babl/babl/base/model-gray.c: babl_get_Y\n");
-/*   Y[0] = SRGB_RED_Y;
-  Y[1] = SRGB_GREEN_Y;
-  Y[2] = SRGB_BLUE_Y;
+{
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
 
-  if ( colorant_babl != NULL) Does this still work once colorant_babl
-  has been used the first time? Probably not. Does it need to? */
-    {
-      double *new_colorant_data = babl_get_user_data (colorant_babl);
-      //printf ("babl model-gray.c 1: babl_get_user_data\n");
-
-      Y[0] = new_colorant_data[1];
-      Y[1] = new_colorant_data[4];
-      Y[2] = new_colorant_data[7];
-      //printf("babl model-gray.c 2: \nrY=%.8f gY=%.8f bY:%.8f\n\n", Y[0], Y[1], Y[2]);
-    }
+  Y[0] = new_colorant_data[1];
+  Y[1] = new_colorant_data[4];
+  Y[2] = new_colorant_data[7];
 
   return Y[3];
 }
