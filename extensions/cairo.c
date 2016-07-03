@@ -27,7 +27,7 @@ int init (void);
 
 static inline long
 conv_rgba8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
-{printf("\nbabl/extensions/cairo.c conv_rgba8_cairo24_le\n");
+{//printf("\nbabl/extensions/cairo.c conv_rgba8_cairo24_le\n");
   long n = samples;
   while (n--)
     {
@@ -43,7 +43,7 @@ conv_rgba8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
 
 static inline long
 conv_rgb8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
-{printf("\nbabl/extensions/cairo.c conv_rgb8_cairo24_le\n");
+{//yes, used printf("\nbabl/extensions/cairo.c conv_rgb8_cairo24_le\n");
   long n = samples;
   while (n--)
     {
@@ -59,7 +59,7 @@ conv_rgb8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
 
 static inline long
 conv_rgbA8_premul_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
-{printf("\nbabl/extensions/cairo.c conv_rgbA8_premul_cairo32_le\n");
+{//printf("\nbabl/extensions/cairo.c conv_rgbA8_premul_cairo32_le\n");
   long n = samples;
   while (n--)
     {
@@ -75,7 +75,7 @@ conv_rgbA8_premul_cairo32_le (unsigned char *src, unsigned char *dst, long sampl
 
 static inline long
 conv_rgbA8_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
-{ // yes, used printf("\nbabl/extensions/cairo.c conv_rgbA8_cairo32_le\n");
+{// yes, used printf("\nbabl/extensions/cairo.c conv_rgbA8_cairo32_le\n");
   long n = samples;
   while (n--)
     {
