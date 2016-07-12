@@ -17,14 +17,10 @@ extdir = $(libdir)/babl-@BABL_API_VERSION@
 ext_LTLIBRARIES = \
 	cairo.la        \
 	CIE.la          \
-	naive-CMYK.la   \
-	HSL.la          \
-	HSV.la
+	naive-CMYK.la
 
 CIE_la_SOURCES = CIE.c
 naive_CMYK_la_SOURCES = naive-CMYK.c
-HSL_la_SOURCES = HSL.c
-HSV_la_SOURCES = HSV.c
 
 
 cairo_la_SOURCES = cairo.c
