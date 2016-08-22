@@ -30,21 +30,71 @@ assert_conversion_find (const void *source,
   return ret;
 }
 
+static int
+create_name_internal (char *buf,
+                      size_t maxlen,
+                      const Babl *source,
+                      const Babl *destination,
+                      int   is_reference)
+{
+  return snprintf (buf, maxlen, "%s %p %p",
+                   is_reference ? "ref "
+                   : "",
+                   source, destination);
+}
+
+#ifdef HAVE_TLS
+
+static __thread char buf[1024];
+
 static char *
 create_name (const Babl *source,
              const Babl *destination,
              int   is_reference)
 {
-  static char buf[1024];
+  int size = 0;
 
-  /* fish names are intentionally kept short */
-  snprintf (buf, 1024, "%s %p %p",
-            is_reference ? "ref "
-            : "",
-            source, destination);
+  size = create_name_internal (buf, sizeof(buf), source, destination, is_reference);
+
+  if (size < 0)
+    return NULL;
+
   return buf;
 }
 
+
+#else
+
+static char *
+create_name (const Babl *source,
+             const Babl *destination,
+             int   is_reference)
+{
+  int size = 0;
+  char *buf = NULL;
+
+  size = create_name_internal (buf, size, source, destination, is_reference);
+
+  if (size < 0)
+    return NULL;
+
+  size++;             /* For '\0' */
+  buf = malloc (size);
+  if (buf == NULL)
+    return NULL;
+
+  size = create_name_internal (buf, size, source, destination, is_reference);
+
+  if (size < 0)
+    {
+      free (buf);
+      return NULL;
+    }
+
+  return buf;
+}
+
+#endif
 
 Babl *
 babl_fish_reference (const Babl *source,
@@ -53,12 +103,17 @@ babl_fish_reference (const Babl *source,
   Babl *babl = NULL;
   char *name = create_name (source, destination, 1);
 
+  babl_assert (name);
+
   babl = babl_db_exist_by_name (babl_fish_db (), name);
   if (babl)
     {
       /* There is an instance already registered by the required name,
        * returning the preexistent one instead.
        */
+#ifndef HAVE_TLS
+      free (name);
+#endif
       return babl;
     }
 
@@ -87,6 +142,9 @@ babl_fish_reference (const Babl *source,
    * name, inserting newly created class into database.
    */
   babl_db_insert (babl_fish_db (), babl);
+#ifndef HAVE_TLS
+  free (name);
+#endif
   return babl;
 }
 
