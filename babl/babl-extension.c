@@ -352,7 +352,15 @@ babl_extension_load_dir_list (const char *dir_list)
 "WARNING: the babl installation seems broken, no extensions found in queried\n"
 "BABL_PATH (%s) this means no SIMD/instructions/special case fast paths and\n"
 "only slow reference conversions are available, applications might still\n"
-"run but software relying on babl for conversions will be slow\n", dir_list);
+"run but software relying on babl for conversions will be slow\n"
+"Note from Elle: For some reason my patched version of babl doesn't trigger this\n"
+"warning message, but it seems like it should. Anyway,\n"
+"the babl cpu code was for speeding up the 'babl flips' between the sRGB\n"
+"and linear gamma TRCs, and I'm guessing 'fast path' code was for speeding up\n"
+"conversions involving 8-bit sRGB images. All such code has been removed\n"
+"from my patched GIMP, so there's no point in keeping code that speeds up\n"
+"code that doesn't exist.\n"
+, dir_list);
   }
 }
 
