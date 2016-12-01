@@ -19,11 +19,9 @@ ext_LTLIBRARIES = \
 	CIE.la          \
 	naive-CMYK.la
 
+cairo_la_SOURCES = cairo.c
 CIE_la_SOURCES = CIE.c
 naive_CMYK_la_SOURCES = naive-CMYK.c
-
-
-cairo_la_SOURCES = cairo.c
 
 LIBS = $(top_builddir)/babl/libbabl-@BABL_API_VERSION@.la $(MATH_LIB) \
 	$(THREAD_LIB)

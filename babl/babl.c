@@ -148,6 +148,8 @@ babl_init (void)
       dir_list = babl_dir_list ();
       babl_extension_load_dir_list (dir_list);
       babl_free (dir_list);
+
+      babl_init_db ();
     }
 }
 
@@ -156,17 +158,7 @@ babl_exit (void)
 {
   if (!-- ref_count)
     {
-      if (getenv ("BABL_STATS"))
-        {
-          char  logfile_name[] = "/tmp/babl-stats.html";
-          FILE *logfile;
-          logfile = fopen (logfile_name, "w");
-          if (logfile)
-            {
-              babl_fish_stats (logfile);
-              fclose (logfile);
-            }
-        }
+      babl_store_db ();
 
       babl_extension_deinit ();
       babl_free (babl_extension_db ());;

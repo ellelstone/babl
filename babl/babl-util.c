@@ -80,13 +80,6 @@ babl_ticks (void)
 }
 #endif
 
-long
-babl_process_cost (long ticks_start,
-                   long ticks_end)
-{
-  return (ticks_end - ticks_start) * 10 + 1;
-}
-
 double
 babl_rel_avg_error (const double *imgA,
                     const double *imgB,

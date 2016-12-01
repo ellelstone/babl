@@ -15,139 +15,139 @@
  * Public License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "babl.h"
 
 #include "base/util.h"
-//#include "extensions/cairo-tables.h"
 
 int init (void);
 
 static inline long
 conv_rgba8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
-{//printf("\nbabl/extensions/cairo.c conv_rgba8_cairo24_le\n");
+{
   long n = samples;
   while (n--)
     {
-      dst[0] = src[2];
-      dst[1] = src[1];
-      dst[2] = src[0];
-      dst[3] = src[0];
-      src+=4;
-      dst+=4;
+      unsigned char red   = *src++;
+      unsigned char green = *src++;
+      unsigned char blue  = *src++;
+      *dst++ = blue;
+      *dst++ = green;
+      *dst++ = red;
+      *dst++ = 255;
+      src++;
     }
   return samples;
 }
 
 static inline long
 conv_rgb8_cairo24_le (unsigned char *src, unsigned char *dst, long samples)
-{//yes, used printf("\nbabl/extensions/cairo.c conv_rgb8_cairo24_le\n");
+{
   long n = samples;
   while (n--)
     {
-      dst[0] = src[2];
-      dst[1] = src[1];
-      dst[2] = src[0];
-      dst[3] = src[0];
-      src+=3;
-      dst+=4;
+      unsigned char red   = *src++;
+      unsigned char green = *src++;
+      unsigned char blue  = *src++;
+      *dst++ = blue;
+      *dst++ = green;
+      *dst++ = red;
+      *dst++ = 255;
     }
   return samples;
 }
 
 static inline long
 conv_rgbA8_premul_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
-{//printf("\nbabl/extensions/cairo.c conv_rgbA8_premul_cairo32_le\n");
+{
   long n = samples;
   while (n--)
     {
-      dst[0] = src[2];
-      dst[1] = src[1];
-      dst[2] = src[0];
-      dst[3] = src[3];
-      src+=4;
-      dst+=4;
+      unsigned char red    = *src++;
+      unsigned char green  = *src++;
+      unsigned char blue   = *src++;
+      unsigned char alpha  = *src++;
+
+      *dst++ = blue;
+      *dst++ = green;
+      *dst++ = red;
+      *dst++ = alpha;
     }
   return samples;
 }
 
 static inline long
 conv_rgbA8_cairo32_le (unsigned char *src, unsigned char *dst, long samples)
-{// yes, used printf("\nbabl/extensions/cairo.c conv_rgbA8_cairo32_le\n");
+{
   long n = samples;
   while (n--)
     {
-#define div_255(a) ((((a)+127)+(((a)+127)>>8))>>8)
-      dst[0] = div_255 (src[2] * src[3]);
-      dst[1] = div_255 (src[1] * src[3]);
-      dst[2] = div_255 (src[0] * src[3]);
+      unsigned char red    = *src++;
+      unsigned char green  = *src++;
+      unsigned char blue   = *src++;
+      unsigned char alpha  = *src++;
+
+#define div_255(a) ((((a)+128)+(((a)+128)>>8))>>8)
+      *dst++ = div_255 (blue  * alpha);
+      *dst++ = div_255 (green * alpha);
+      *dst++ = div_255 (red   * alpha);
 #undef div_255
-      dst[3] = src[3];
-      src+=4;
-      dst+=4;
+      *dst++ = alpha;
     }
   return samples;
 }
 
-static inline unsigned char
-conv_rgbafloat_cairo32_map (float value,
-                            float alpha)
-{// yes usedprintf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_map\n");
-  unsigned short index;
-  float result;
-  if (value < 0.0)
-    return 0;
-  else if (value > 1.0)
-    return 0xFF;
-  index = (unsigned short)(value * 0xFFFF);
-  result = index / 257.0; /* 65535.0 / 255.0 */
-
-  return (result * alpha) + 0.5f;
-}
-
 static long
-conv_rgbafloat_cairo32_le (unsigned char *src_char,
+conv_rgbafloat_cairo32_le (unsigned char *src,
                            unsigned char *dst,
                            long           samples)
-{// yes, used printf("\nbabl/extensions/cairo.c conv_rgbafloat_cairo32_le\n");
-  long   n   = samples;
-  float *src = (float*)src_char;
+{
+  float *fsrc = (float *) src;
+  unsigned char *cdst = (unsigned char *) dst;
+  int n = samples;
 
   while (n--)
     {
-      if (src[3] < BABL_ALPHA_THRESHOLD)
-        {
-          *(int *)dst = 0;
-        }
+      float red    = *fsrc++;
+      float green  = *fsrc++;
+      float blue   = *fsrc++;
+      float alpha  = *fsrc++;
+      if (alpha >= 1.0)
+      {
+        int val = blue * 0xff + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        val = green * 0xff + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        val = red * 0xff + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        *cdst++ = 0xff;
+      }
+      else if (alpha <= 0.0)
+      {
+        (*(uint32_t*)cdst)=0;
+        cdst+=4;
+      }
       else
-        {
-          if (src[3] >= 1.0)
-            {
-              dst[0] = conv_rgbafloat_cairo32_map (src[2], 1.0f);
-              dst[1] = conv_rgbafloat_cairo32_map (src[1], 1.0f);
-              dst[2] = conv_rgbafloat_cairo32_map (src[0], 1.0f);
-              dst[3] = 0xFF;
-            }
-          else
-            {
-              dst[0] = conv_rgbafloat_cairo32_map (src[2], src[3]);
-              dst[1] = conv_rgbafloat_cairo32_map (src[1], src[3]);
-              dst[2] = conv_rgbafloat_cairo32_map (src[0], src[3]);
-              dst[3] = src[3] * 0xFF + 0.5f;
-            }
-        }
-
-      src += 4;
-      dst += 4;
+      {
+        float balpha = alpha * 0xff;
+        int val = blue * balpha + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        val = green * balpha + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        val = red * balpha + 0.5f;
+        *cdst++ = val >= 0xff ? 0xff : val <= 0 ? 0 : val;
+        *cdst++ = balpha + 0.5f;
+      }
     }
   return samples;
 }
 
 int
 init (void)
-{//yes used printf("\nbabl/extensions/cairo.c init\n");
+{
   int   testint  = 23;
   char *testchar = (char*) &testint;
   int   littleendian = (testchar[0] == 23);
@@ -218,6 +218,7 @@ init (void)
     babl_type ("u8"),
     babl_component ("A"),
     NULL
-  );
+    );
+  
   return 0;
 }
