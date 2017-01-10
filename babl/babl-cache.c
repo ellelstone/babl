@@ -23,9 +23,9 @@
 #include "git-version.h"
 
 #ifdef _WIN32
-#define FALLBACK_CACHE_PATH  "C:/babl-fishes.txt"
+#define FALLBACK_CACHE_PATH  "C:/babl-fishes-cce.txt"
 #else
-#define FALLBACK_CACHE_PATH  "/tmp/babl-fishes.txt"
+#define FALLBACK_CACHE_PATH  "/tmp/babl-fishes-cce.txt"
 #endif
 
 static int
@@ -75,10 +75,10 @@ static const char *fish_cache_path (void)
   strncpy (path, FALLBACK_CACHE_PATH, 4096);
 #ifndef _WIN32
   if (getenv ("HOME"))
-    sprintf (path, "%s/.cache/babl/babl-fishes", getenv("HOME"));
+    sprintf (path, "%s/.cache/babl/babl-fishes-cce", getenv("HOME"));
 #else
   if (getenv ("TEMP"))
-    sprintf (path, "%s\\babl-fishes.txt", getenv("TEMP"));
+    sprintf (path, "%s\\babl-fishes-cce.txt", getenv("TEMP"));
 #endif
 
   if (stat (path, &stat_buf)==0 && S_ISREG(stat_buf.st_mode))
