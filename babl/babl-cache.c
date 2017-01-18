@@ -79,7 +79,7 @@ static const char *fish_cache_path (void)
   strncpy (path, FALLBACK_CACHE_PATH, 4096);
 #ifndef _WIN32
   if (getenv ("HOME"))
-    sprintf (path, "%s/.cache/babl/babl-fishes-cce", getenv("HOME"));
+    sprintf (path, "%s/.cache/babl/babl-fishes-cce.txt", getenv("HOME"));
 #else
 {
   char win32path[4096];
