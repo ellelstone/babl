@@ -351,7 +351,7 @@ babl_fish_path (const Babl *source,
       if (debug_conversions)
 #endif
       {
-        static int warnings = 0;
+/*        static int warnings = 0;
         if (warnings++ == 0)
           fprintf (stderr, 
 "Missing fast-path babl conversion detected, Implementing missing babl fast paths\n"
@@ -362,7 +362,7 @@ babl_fish_path (const Babl *source,
 
         fprintf (stderr, "*WARNING*: missing babl fast path(s) between formats \"%s\" and \"%s\"\n",
            babl_get_name (source),
-           babl_get_name (destination));
+           babl_get_name (destination));*/
 
       }
       return NULL;
