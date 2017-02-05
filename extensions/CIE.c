@@ -794,8 +794,8 @@ cubef (float f)
 #include <stdint.h>
 
 static const unsigned
-B1 = 709958130, /* B1 = (127-127.0/3-0.03306235651)*2**23 */
-B2 = 642849266; /* B2 = (127-127.0/3-24/3-0.03306235651)*2**23 */
+B1 = 709958130, //B1 = (127-127.0/3-0.03306235651)*2**23
+B2 = 642849266; // B2 = (127-127.0/3-24/3-0.03306235651)*2**23
 
 static inline float _cbrtf(float x)
 {
@@ -803,13 +803,13 @@ static inline float _cbrtf(float x)
 	union {float f; uint32_t i;} u = {x};
 	uint32_t hx = u.i & 0x7fffffff;
 
-	if (hx >= 0x7f800000)  /* cbrt(NaN,INF) is itself */
+	if (hx >= 0x7f800000)  // cbrt(NaN,INF) is itself
 		return x + x;
 
-	/* rough cbrt to 5 bits */
-	if (hx < 0x00800000) {  /* zero or subnormal? */
+	//rough cbrt to 5 bits
+	if (hx < 0x00800000) {  //zero or subnormal? 
 		if (hx == 0)
-			return x;  /* cbrt(+-0) is itself */
+			return x;  //cbrt(+-0) is itself
 		u.f = x*0x1p24f;
 		hx = u.i & 0x7fffffff;
 		hx = hx/3 + B2;
