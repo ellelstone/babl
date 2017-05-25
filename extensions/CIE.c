@@ -531,7 +531,7 @@ lab_to_rgba (char *src,
       
       //convert Lab to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
-      
+
       //convert XYZ to RGB
       XYZ_to_RGB (X, Y, Z, &R, &G, &B);
       ((double *) dst)[0] = R;
@@ -557,10 +557,10 @@ rgba_to_laba (char *src,
       double B     = ((double *) src)[2];
       double alpha = ((double *) src)[3];
       double X, Y, Z, L, a, b;
-      
+
       //convert RGB to XYZ
       RGB_to_XYZ (R, G, B, &X, &Y, &Z);
-      
+
       //convert XYZ to Lab
       XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
@@ -588,10 +588,10 @@ laba_to_rgba (char *src,
       double alpha = ((double *) src)[3];
 
       double X, Y, Z, R, G, B;
-      
+
       //convert Lab to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
-      
+
       //convert XYZ to RGB
       XYZ_to_RGB (X, Y, Z, &R, &G, &B);
       ((double *) dst)[0] = R;
@@ -692,7 +692,6 @@ lchab_to_rgba (char *src,
   return n;
 }
 
-
 static long
 rgba_to_lchaba (char *src,
                 char *dst,
@@ -759,9 +758,7 @@ lchaba_to_rgba (char *src,
   return n;
 }
 
-
 /******** end double RGB/CIE color space conversions ******************/
-
 
 /******** begin floating point RGB/CIE color space conversions ********/
 
@@ -982,6 +979,126 @@ Labaf_to_rgbaf (float *src,
   return samples;
 }
 
+static long
+Labf_to_Lchabf (float *src,
+                float *dst,
+                long   samples)
+{
+  long n = samples;
+
+  while (n--)
+    {
+      float L = src[0];
+      float A = src[1];
+      float B = src[2];
+
+      float C = sqrtf (A * A + B * B);
+      float H = atan2f (B, A) * DEGREES_PER_RADIAN;
+
+      // Keep H within the range 0-360
+      if (H < 0.0f)
+        H += 360.0f;
+
+      dst[0] = L;
+      dst[1] = C;
+      dst[2] = H;
+
+      src += 3;
+      dst += 3;
+    }
+
+  return samples;
+}
+
+static long
+Lchabf_to_Labf (float *src,
+                float *dst,
+                long   samples)
+{
+  long n = samples;
+
+  while (n--)
+    {
+      float L = src[0];
+      float C = src[1];
+      float H = src[2];
+
+      float A = C * cosf (H * RADIANS_PER_DEGREE);
+      float B = C * sinf (H * RADIANS_PER_DEGREE);
+
+      dst[0] = L;
+      dst[1] = A;
+      dst[2] = B;
+
+      src += 3;
+      dst += 3;
+    }
+
+  return samples;
+}
+
+static long
+Labaf_to_Lchabaf (float *src,
+                  float *dst,
+                  long   samples)
+{
+  long n = samples;
+
+  while (n--)
+    {
+      float L = src[0];
+      float A = src[1];
+      float B = src[2];
+      float a = src[3];
+
+      float C = sqrtf (A * A + B * B);
+      float H = atan2f (B, A) * DEGREES_PER_RADIAN;
+
+      // Keep H within the range 0-360
+      if (H < 0.0f)
+        H += 360.0f;
+
+      dst[0] = L;
+      dst[1] = C;
+      dst[2] = H;
+      dst[3] = a;
+
+      src += 4;
+      dst += 4;
+    }
+
+  return samples;
+}
+
+static long
+Lchabaf_to_Labaf (float *src,
+                  float *dst,
+                  long   samples)
+{
+  long n = samples;
+
+  while (n--)
+    {
+      float L = src[0];
+      float C = src[1];
+      float H = src[2];
+      float a = src[3];
+
+      float A = C * cosf (H * RADIANS_PER_DEGREE);
+      float B = C * sinf (H * RADIANS_PER_DEGREE);
+
+      dst[0] = L;
+      dst[1] = A;
+      dst[2] = B;
+      dst[3] = a;
+
+      src += 4;
+      dst += 4;
+    }
+
+  return samples;
+}
+
 static void
 conversions (void)
 {
@@ -1063,6 +1180,42 @@ conversions (void)
     "linear", lchaba_to_rgba,
     NULL
   );
+  babl_conversion_new (
+    babl_format ("CIE Lab float"),
+    babl_format ("CIE LCH(ab) float"),
+    "linear", Labf_to_Lchabf,
+    NULL
+  );
+  babl_conversion_new (
+    babl_format ("CIE LCH(ab) float"),
+    babl_format ("CIE Lab float"),
+    "linear", Lchabf_to_Labf,
+    NULL
+  );
+  babl_conversion_new (
+    babl_format ("CIE Lab alpha float"),
+    babl_format ("CIE LCH(ab) alpha float"),
+    "linear", Labaf_to_Lchabaf,
+    NULL
+  );
+  babl_conversion_new (
+    babl_format ("CIE LCH(ab) alpha float"),
+    babl_format ("CIE Lab alpha float"),
+    "linear", Lchabaf_to_Labaf,
+    NULL
+  );
+  /*babl_conversion_new (
+    babl_model ("RGBA"),
+    babl_model ("CIE XYZ"),
+    "linear", RGB_to_XYZ,
+    NULL
+  );
+  babl_conversion_new (
+    babl_model ("CIE XYZ"),
+    babl_model ("RGBA"),
+    "linear", XYZ_to_RGB,
+    NULL
+  );*/
 
   rgbcie_init ();
 }
@@ -1147,7 +1300,6 @@ formats (void)
 
 
 /******** end floating point RGB/CIE color space conversions **********/
-
 
 /******** begin  integer RGB/CIE color space conversions **************/
 
@@ -1437,3 +1589,4 @@ types (void)
 }
 
 /******** end  integer RGB/CIE color space conversions ****************/
+

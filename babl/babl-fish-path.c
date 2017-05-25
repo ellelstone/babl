@@ -202,7 +202,7 @@ get_conversion_path (PathContext *pc,
 
           get_path_instrumentation (&fpi, pc->current_path, &path_cost, &ref_cost, &path_error);
           if(debug_conversions && current_length == 1)
-            fprintf (stderr, "%s  error:%f cost:%f  \n", 
+            fprintf (stderr, "%s  error:%f cost:%f  \n",
                  babl_get_name (pc->current_path->items[0]),
                  /*babl_get_name (pc->fish_path->fish.source),
                  babl_get_name (pc->fish_path->fish.destination),*/
@@ -227,7 +227,7 @@ get_conversion_path (PathContext *pc,
   else
     {
       /*
-       * Bummer, we have to search deeper... 
+       * Bummer, we have to search deeper...
        */
       BablList *list;
       int i;
@@ -351,9 +351,13 @@ babl_fish_path (const Babl *source,
       if (debug_conversions)
 #endif
       {
-/*        static int warnings = 0;
+        static int warnings = 0;
+
+        if (_babl_legal_error() <= 0.0000000001)
+            return NULL;
+
         if (warnings++ == 0)
-          fprintf (stderr, 
+          fprintf (stderr,
 "Missing fast-path babl conversion detected, Implementing missing babl fast paths\n"
 "accelerates GEGL, GIMP and other software using babl, warnings are printed on\n"
 "first occurance of formats used where a conversion has to be synthesized\n"
@@ -362,7 +366,7 @@ babl_fish_path (const Babl *source,
 
         fprintf (stderr, "*WARNING*: missing babl fast path(s) between formats \"%s\" and \"%s\"\n",
            babl_get_name (source),
-           babl_get_name (destination));*/
+           babl_get_name (destination));
 
       }
       return NULL;

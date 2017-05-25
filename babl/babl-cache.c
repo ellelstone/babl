@@ -78,8 +78,10 @@ static const char *fish_cache_path (void)
 
   strncpy (path, FALLBACK_CACHE_PATH, 4096);
 #ifndef _WIN32
-  if (getenv ("HOME"))
-    sprintf (path, "%s/.cache/babl/babl-fishes-cce.txt", getenv("HOME"));
+  if (getenv ("XDG_CACHE_HOME"))
+    sprintf (path, "%s/babl/babl-fishes.txt", getenv("XDG_CACHE_HOME"));
+  else if (getenv ("HOME"))
+    sprintf (path, "%s/.cache/babl/babl-fishes.txt", getenv("HOME"));
 #else
 {
   char win32path[4096];
@@ -186,6 +188,9 @@ void babl_store_db (void)
   }
   fclose (dbfile);
 
+#ifdef _WIN32
+  remove (fish_cache_path ());
+#endif
   rename (tmpp, fish_cache_path());
   free (tmpp);
 }
