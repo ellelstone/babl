@@ -350,7 +350,7 @@ babl_fish_path (const Babl *source,
 #ifndef BABL_UNSTABLE
       if (debug_conversions)
 #endif
-      {
+/*      {
         static int warnings = 0;
 
         if (_babl_legal_error() <= 0.0000000001)
@@ -368,7 +368,7 @@ babl_fish_path (const Babl *source,
            babl_get_name (source),
            babl_get_name (destination));
 
-      }
+      }*/
       return NULL;
     }
 
