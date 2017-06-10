@@ -21,12 +21,14 @@
 #include "config.h"
 #include <math.h>
 #include <string.h>
+
+#include "babl.h"
+#include "extensions/util.h"
+
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "babl/babl.h"
-#include "util.h"
-#include "extensions/util.h"
 
 /*******begin James Gregson's matrix code *****************************/
 
@@ -197,8 +199,8 @@ double residual_3x3( double A[3][3], double x[3], double b[3] ){
 #define DEGREES_PER_RADIAN (180 / 3.14159265358979323846)
 #define RADIANS_PER_DEGREE (1 / DEGREES_PER_RADIAN)
 
-#define LAB_EPSILON       (216.0 / 24389.0)
-#define LAB_KAPPA         (24389.0 / 27.0)
+#define LAB_EPSILON       (216.0f / 24389.0f)
+#define LAB_KAPPA         (24389.0f / 27.0f)
 
 /* The constants below hard-code the D50-adapted sRGB ICC profile
  * reference white, aka the ICC profile D50 illuminant.
@@ -215,9 +217,9 @@ double residual_3x3( double A[3][3], double x[3], double b[3] ){
  * hard-coded D50 ICC profile illuminant values:
  */
 
-#define D50_WHITE_REF_X   0.964202880
-#define D50_WHITE_REF_Y   1.000000000
-#define D50_WHITE_REF_Z   0.824905400
+#define D50_WHITE_REF_X   0.964202880f
+#define D50_WHITE_REF_Y   1.000000000f
+#define D50_WHITE_REF_Z   0.824905400f
 
 static double babl_get_colorants (double colorants[3][3]);
 
@@ -261,7 +263,8 @@ static void formats (void);
 
 int init (void);
 
-int init (void)
+int
+init (void)
 {
   types ();
   components ();
@@ -269,25 +272,6 @@ int init (void)
   formats ();
   conversions ();
   return 0;
-}
-
-static void  rgbcie_init (void);
-
-static void
-rgbxyzrgb_init (void)
-{
-}
-
-static void
-rgbcie_init (void)
-{
-  static int initialized = 0;
-
-  if (!initialized)
-    {
-      rgbxyzrgb_init ();
-      initialized = 1;
-    }
 }
 
 static void
@@ -298,6 +282,9 @@ components (void)
   babl_component_new ("CIE b", "chroma", NULL);
   babl_component_new ("CIE C(ab)", "chroma", NULL);
   babl_component_new ("CIE H(ab)", "chroma", NULL);
+  /* babl_component_new ("CIE X", NULL);
+  babl_component_new ("CIE Y", NULL);
+  babl_component_new ("CIE Z", NULL);*/
 }
 
 static void
@@ -332,8 +319,15 @@ models (void)
     babl_component ("CIE H(ab)"),
     babl_component ("A"),
     NULL);
+  /*babl_model_new (
+    "name", "CIE XYZ",
+    babl_component ("CIE X"),
+    babl_component ("CIE Y"),
+    babl_component ("CIE Z"),
+    NULL);*/
 }
 
+static void  rgbcie_init (void);
 
 /******** begin double RGB/CIE color space conversions ****************/
 
@@ -346,7 +340,7 @@ static inline void  CHab_to_ab    (double  C,
                                    double  H,
                                    double *to_a,
                                    double *to_b);
-                                   
+
 static inline void RGB_to_XYZ     (double R,
                                    double G,
                                    double B,
@@ -389,6 +383,7 @@ RGB_to_XYZ (double R,
   babl_get_colorants (colorants);
 
   /* Convert RGB to XYZ */
+
   *to_X = colorants[0][0]*R
         + colorants[0][1]*G
         + colorants[0][2]*B;
@@ -412,7 +407,9 @@ XYZ_to_RGB (double X,
 {
   double inverse_colorants[3][3];
   babl_get_inverse_colorants (inverse_colorants);
+
   /* Convert XYZ to RGB */
+
   *to_R = inverse_colorants[0][0]*X
         + inverse_colorants[0][1]*Y
         + inverse_colorants[0][2]*Z;
@@ -499,10 +496,10 @@ rgba_to_lab (char *src,
       double G  = ((double *) src)[1];
       double B  = ((double *) src)[2];
       double X, Y, Z, L, a, b;
-      
+
       //convert RGB to XYZ
       RGB_to_XYZ (R, G, B, &X, &Y, &Z);
-      
+
       //convert XYZ to Lab
       XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
@@ -528,7 +525,7 @@ lab_to_rgba (char *src,
       double b = ((double *) src)[2];
 
       double X, Y, Z, R, G, B;
-      
+
       //convert Lab to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
 
@@ -758,9 +755,67 @@ lchaba_to_rgba (char *src,
   return n;
 }
 
+
 /******** end double RGB/CIE color space conversions ******************/
 
 /******** begin floating point RGB/CIE color space conversions ********/
+
+/* origin: FreeBSD /usr/src/lib/msun/src/s_cbrtf.c */
+/*
+ * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Debugged and optimized by Bruce D. Evans.
+ */
+/*
+ * ====================================================
+ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+ * ====================================================
+ */
+/* _cbrtf(x)
+ * Return cube root of x
+ */
+/*
+#include <math.h>
+#include <stdint.h>
+*/
+/* static const unsigned
+B1 = 709958130, //B1 = (127-127.0/3-0.03306235651)*2**23
+B2 = 642849266; //B2 = (127-127.0/3-24/3-0.03306235651)*2**23
+
+static inline float _cbrtf(float x)
+{
+  float r,T;
+  union {float f; uint32_t i;} u = {x};
+  uint32_t hx = u.i & 0x7fffffff;
+
+  if (hx >= 0x7f800000)  //cbrt(NaN,INF) is itself
+    return x + x;
+
+  //rough cbrt to 5 bits
+  if (hx < 0x00800000) {  //zero or subnormal?
+    if (hx == 0)
+      return x;  //cbrt(+-0) is itself
+    u.f = x*0x1p24f;
+    hx = u.i & 0x7fffffff;
+    hx = hx/3 + B2;
+  } else
+    hx = hx/3 + B1;
+  u.i &= 0x80000000;
+  u.i |= hx;
+
+  T = u.f;
+  r = T*T*T;
+  T = T*((float)x+x+r)/(x+r+r);
+
+  r = T*T*T;
+  T = T*((float)x+x+r)/(x+r+r);
+
+  return T;
+}*/
 
 static inline float
 cubef (float f)
@@ -779,7 +834,7 @@ Yaf_to_Laf (float *src,
     {
       float yr = src[0];
       float a  = src[1];
-      float L  = yr > LAB_EPSILON ? 116.0 * cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
       dst[1] = a;
@@ -1233,6 +1288,16 @@ formats (void)
     babl_component ("CIE b"),
     NULL);
 
+  /*babl_format_new (
+    "name", "CIE XYZ float",
+    babl_model ("CIE XYZ"),
+
+    babl_type ("float"),
+    babl_component ("CIE X"),
+    babl_component ("CIE Y"),
+    babl_component ("CIE Z"),
+    NULL);*/
+
   babl_format_new (
     "name", "CIE Lab alpha float",
     babl_model ("CIE Lab alpha"),
@@ -1590,3 +1655,19 @@ types (void)
 
 /******** end  integer RGB/CIE color space conversions ****************/
 
+static void
+rgbxyzrgb_init (void)
+{
+}
+
+static void
+rgbcie_init (void)
+{
+  static int initialized = 0;
+
+  if (!initialized)
+    {
+      rgbxyzrgb_init ();
+      initialized = 1;
+    }
+}
