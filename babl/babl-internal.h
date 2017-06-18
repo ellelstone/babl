@@ -269,7 +269,11 @@ babl_##klass (const char *name)                               \
                                                               \
   if (babl_hmpf_on_name_lookups)                              \
     {                                                         \
-      babl_log ("%s(\"%s\"): hmpf!", G_STRFUNC, name);        \
+      babl_log ("%s(\"%s\"): looking up", G_STRFUNC, name);   \
+    }                                                         \
+  if (!db)                                                    \
+    {                                                         \
+      babl_fatal ("%s(\"%s\"): you must call babl_init first", G_STRFUNC, name);  \
     }                                                         \
   babl = babl_db_exist_by_name (db, name);                    \
                                                               \
