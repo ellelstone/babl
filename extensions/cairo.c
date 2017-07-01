@@ -397,18 +397,15 @@ init (void)
         NULL
       );
 
-      babl_conversion_new (f32, babl_format ("RaGaBaA float"), "linear", 
+      babl_conversion_new (f32, babl_format ("RaGaBaA float"), "linear",
                            conv_cairo32_rgbAF_premul_le, NULL);
 
-      babl_conversion_new (f32, babl_format ("RaGaBaA u8"), "linear", 
+      babl_conversion_new (f32, babl_format ("RaGaBaA u8"), "linear",
                            conv_cairo32_rgbA8_premul_le, NULL);
-
-      babl_conversion_new (babl_format ("RaGaBaA u8"), f32, "linear", 
-                           conv_rgbA8_premul_cairo32_le, NULL);
-
 
       babl_conversion_new (babl_format ("RaGaBaA u8"), f32, "linear",
                            conv_rgbA8_premul_cairo32_le, NULL);
+
       babl_conversion_new (babl_format ("RGBA u8"), f32, "linear",
                            conv_rgbA8_cairo32_le, NULL);
 
@@ -472,6 +469,6 @@ init (void)
     babl_component ("A"),
     NULL
     );
-  
+
   return 0;
 }
