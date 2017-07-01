@@ -71,7 +71,7 @@ components (void)
     "luma",
     NULL);
 
-  babl_component_new (
+/*  babl_component_new (
     "Y'",
     "id", BABL_LUMA,
     "luma",
@@ -81,7 +81,7 @@ components (void)
     "Y'a",
     "id", BABL_LUMA_MUL_ALPHA,
     "luma",
-    NULL);
+    NULL);*/
 }
 
 static void
