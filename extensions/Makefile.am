@@ -18,10 +18,12 @@ ext_LTLIBRARIES = \
 	16bit.la        \
 	cairo.la        \
 	CIE.la          \
+	HSV.la          \
 	naive-CMYK.la
 
 cairo_la_SOURCES = cairo.c
 CIE_la_SOURCES = CIE.c
+HSV_la_SOURCES = HSV.c
 naive_CMYK_la_SOURCES = naive-CMYK.c
 
 LIBS = $(top_builddir)/babl/libbabl-@BABL_API_VERSION@.la $(MATH_LIB) \
