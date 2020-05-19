@@ -63,7 +63,6 @@ const Babl * babl_type      (const char *name);
 const Babl * babl_sampling  (int horizontal,
                              int vertical);
 
-
 /**
  * babl_component:
  *
@@ -635,6 +634,29 @@ babl_space_get_rgb_luminance (const Babl *space,
                               double     *red_luminance,
                               double     *green_luminance,
                               double     *blue_luminance);
+
+
+/**
+ * babl_space_get_rgbtoxyz:
+ * Returns a pointer to the 9 element RGB to XYZ matrix
+ * that could be used for example as:
+ * const Babl   *space    = babl_format_get_space (format);
+ * const double *rgbtoxyz = babl_space_get_rgbtoxyz (space);
+ * double red_Y   = rgbtoxyz[3];
+ * double green_Y = rgbtoxyz[4];
+ * double blue_Y  = rgbtoxyz[5];
+ */
+ 
+const double *
+babl_space_get_rgbtoxyz (const Babl *space);
+
+
+#ifndef COLORANTS_H
+#define COLORANTS_H
+extern const Babl *colorant_babl;
+extern double *colorant_data;
+#endif
+
 
 /**
  * babl_model_is:

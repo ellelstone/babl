@@ -18,18 +18,185 @@
  * Public License along with this library; if not, see
  * <https://www.gnu.org/licenses/>.
  */
-
+#include <stdio.h>
 #include "config.h"
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
 
-#if defined(USE_SSE2)
-#include <emmintrin.h>
-#endif /* defined(USE_SSE2) */
-
 #include "babl-internal.h"
 #include "extensions/util.h"
+
+#include "util.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+/*******begin James Gregson's matrix code *****************************/
+
+/**
+ @file solve_2x2_3x3.h
+ http://jamesgregson.blogspot.com/2012/09/2x2-and-3x3-matrix-inverses-and-linear.html
+ @author James Gregson (james.gregson@gmail.com)
+ @brief 2x2 and 3x3 matrix inverses and linear system solvers. Free for all use. Best efforts made at testing although I give no guarantee of correctness. Although not required, please leave this notice intact and pass along any bug-fixes/reports to the email address above.  See the functions test_2x2() and test_3x3() for usage details.
+*/
+
+/**
+* Elle Stone modified the solve_2x2_3x3.h code to change "const double"
+* to "double" for the input matrices. This probably wasn't required as
+* the problems I was having compiling the code seem to have been
+* related to problems with include files and/or linking issues.
+*
+* Elle Stone also removed the test_2x2 and test_3x3 matrix functions
+* because they use drand, which doesn't compile under Windows.
+*/
+
+#ifndef SOLVE_2X2_3X3
+#define SOLVE_2x2_3X3
+
+#define SOLVE_SUCCESS 0
+#define SOLVE_FAILURE 1
+#define SOLVE_EPSILON 1e-8
+
+/**
+ @brief Compute the inverse of a 2x2 matrix A and store it in iA, returns SOLVE_FAILURE on failure.
+ @param[in] A Input matrix, indexed by row then column, i.e. A[row][column]
+ @param[out] iA Output matrix that is the inverse of A, provided a is definite
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int invert_2x2( double A[2][2], double iA[2][2] );
+
+/**
+ @brief Solves a 2x2 system Ax=b
+ @param[in] A input 2x2 matrix
+ @param[out] x output solution vector
+ @param[in] b input right-hand-side
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int solve_2x2( double A[2][2], double x[2], double b[2] );
+
+/**
+ @brief Computes the squared residual of a solution x for a linear system Ax=b, for testing purposes.
+ @param[in] A input matrix
+ @param[in] x input solution vector
+ @param[in] b input right-hand-side
+ @return squared 2-norm of residual vector
+ */
+double residual_2x2( double A[2][2], double x[2], double b[2] );
+
+/**
+ @brief Compute the inverse of a 3x3 matrix A and store it in iA, returns SOLVE_FAILURE on failure.
+ @param[in] A Input matrix, indexed by row then column, i.e. A[row][column]
+ @param[out] iA Output matrix that is the inverse of A, provided a is definite
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int invert_3x3( double A[3][3], double iA[3][3] );
+
+/**
+ @brief Solves a 3x3 system Ax=b
+ @param[in] A input 3x3 matrix
+ @param[out] x output solution vector
+ @param[in] b input right-hand-side
+ @return SOLVE_SUCCESS on success, SOLVE_FAILURE on failure
+ */
+int solve_3x3( double A[3][3], double x[3], double b[3] );
+
+/**
+ @brief Computes the squared residual of a solution x for a linear system Ax=b, for testing purposes.
+ @param[in] A input matrix
+ @param[in] x input solution vector
+ @param[in] b input right-hand-side
+ @return squared 2-norm of residual vector
+ */
+double residual_3x3( double A[3][3], double x[3], double b[3] );
+
+
+#endif
+
+/**
+ @file solve_2x2_3x3.c
+ @author James Gregson (james.gregson@gmail.com)
+ http://jamesgregson.blogspot.com/2012/09/2x2-and-3x3-matrix-inverses-and-linear.html
+ @brief Implementation for 2x2 and 3x3 matrix inverses and linear system solution. See solve_2x2_3x3.h for details.
+*/
+
+int invert_2x2( double A[2][2], double iA[2][2] ){
+ double det;
+ det = A[0][0]*A[1][1] - A[0][1]*A[1][0];
+ if( fabs(det) < SOLVE_EPSILON )
+  return SOLVE_FAILURE;
+
+ iA[0][0] =  A[1][1]/det; iA[0][1] = -A[0][1]/det;
+ iA[1][0] = -A[1][0]/det; iA[1][1] =  A[0][0]/det;
+
+ return SOLVE_SUCCESS;
+}
+
+int solve_2x2( double A[2][2], double x[2], double b[2] ){
+ double iA[2][2];
+
+ if( invert_2x2( A, iA ) )
+  return SOLVE_FAILURE;
+
+ x[0] = iA[0][0]*b[0] + iA[0][1]*b[1];
+ x[1] = iA[1][0]*b[0] + iA[1][1]*b[1];
+
+ return SOLVE_SUCCESS;
+}
+
+double residual_2x2( double A[2][2], double x[2], double b[2] ){
+ double r[2];
+ r[0] = A[0][0]*x[0] + A[0][1]*x[1] - b[0];
+ r[1] = A[1][0]*x[0] + A[1][1]*x[1] - b[1];
+ return r[0]*r[0] + r[1]*r[1];
+}
+
+int invert_3x3( double A[3][3], double iA[3][3] ){
+ double det;
+
+ det = A[0][0]*(A[2][2]*A[1][1]-A[2][1]*A[1][2])
+ - A[1][0]*(A[2][2]*A[0][1]-A[2][1]*A[0][2])
+ + A[2][0]*(A[1][2]*A[0][1]-A[1][1]*A[0][2]);
+ if( fabs(det) < SOLVE_EPSILON )
+  return SOLVE_FAILURE;
+
+ iA[0][0] =  (A[2][2]*A[1][1]-A[2][1]*A[1][2])/det;
+ iA[0][1] = -(A[2][2]*A[0][1]-A[2][1]*A[0][2])/det;
+ iA[0][2] =  (A[1][2]*A[0][1]-A[1][1]*A[0][2])/det;
+
+ iA[1][0] = -(A[2][2]*A[1][0]-A[2][0]*A[1][2])/det;
+ iA[1][1] =  (A[2][2]*A[0][0]-A[2][0]*A[0][2])/det;
+ iA[1][2] = -(A[1][2]*A[0][0]-A[1][0]*A[0][2])/det;
+
+ iA[2][0] =  (A[2][1]*A[1][0]-A[2][0]*A[1][1])/det;
+ iA[2][1] = -(A[2][1]*A[0][0]-A[2][0]*A[0][1])/det;
+ iA[2][2] =  (A[1][1]*A[0][0]-A[1][0]*A[0][1])/det;
+
+ return SOLVE_SUCCESS;
+}
+
+int solve_3x3( double A[3][3], double x[3], double b[3] ){
+ double iA[3][3];
+
+ if( invert_3x3( A, iA ) )
+  return SOLVE_FAILURE;
+
+ x[0] = iA[0][0]*b[0] + iA[0][1]*b[1] + iA[0][2]*b[2];
+ x[1] = iA[1][0]*b[0] + iA[1][1]*b[1] + iA[1][2]*b[2];
+ x[2] = iA[2][0]*b[0] + iA[2][1]*b[1] + iA[2][2]*b[2];
+
+ return SOLVE_SUCCESS;
+}
+
+double residual_3x3( double A[3][3], double x[3], double b[3] ){
+ double r[3];
+ r[0] = A[0][0]*x[0] + A[0][1]*x[1] + A[0][2]*x[2] - b[0];
+ r[1] = A[1][0]*x[0] + A[1][1]*x[1] + A[1][2]*x[2] - b[1];
+ r[2] = A[2][0]*x[0] + A[2][1]*x[1] + A[2][2]*x[2] - b[2];
+ return r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+}
+
+/*********** end James Gregson's matrix code **************************/
 
 #define DEGREES_PER_RADIAN (180 / 3.14159265358979323846)
 #define RADIANS_PER_DEGREE (1 / DEGREES_PER_RADIAN)
@@ -62,6 +229,58 @@
 #define D50_WHITE_REF_x   0.345702921222f
 #define D50_WHITE_REF_y   0.358537532290f
 
+/* Set global variables for passing colorant information
+ * from GIMP to babl 
+ */
+const Babl *colorant_babl;
+double *colorant_data;
+
+
+static const Babl * babl_get_space_from_gimp (void);
+
+static const Babl *
+babl_get_space_from_gimp (void)
+{
+  const Babl *colorant_babl = babl_format ("Y u8");
+  double *colorant_data = babl_get_user_data (colorant_babl);
+  const Babl *space;
+  double rx, gx, bx, ry, gy, by, rz, gz, bz;
+  char myprofilename[15] = "colorants";
+  const char *name = myprofilename;
+  const Babl *trc = babl_trc_gamma (1.0);
+
+    rx = colorant_data[0];
+    gx = colorant_data[3];
+    bx = colorant_data[6];
+
+    ry = colorant_data[1];
+    gy = colorant_data[4];
+    by = colorant_data[7];
+
+    rz = colorant_data[2];
+    gz = colorant_data[5];
+    bz = colorant_data[8];
+//Uncomment the code below to print colorants to screen:
+//printf("CIE.c babl_get_user_data: Y values=%.8f %.8f %.8f\n", ry, gy, by);
+
+  space = babl_space_from_rgbxyz_matrix (name,
+                                0.96420288, 1.00000000, 0.82490540,
+                                rx, gx, bx,
+                                ry, gy, by,
+                                rz, gz, bz,
+                                trc,
+                                trc,
+                                trc);
+
+/*
+const double *rgbtoxyz = babl_space_get_rgbtoxyz (space);
+double red_Y   = rgbtoxyz[3];
+double green_Y = rgbtoxyz[4];
+double blue_Y  = rgbtoxyz[5];
+printf("CIE.c Y values from babl_space_get_rgbtoxyz: \nrY=%.8f gY=%.8f bY:%.8f\n\n", red_Y, green_Y, blue_Y);
+*/
+return space;
+}
 
 static void types (void);
 static void components (void);
@@ -215,6 +434,13 @@ static inline void  CHab_to_ab    (double  C,
                                    double *to_a,
                                    double *to_b);
 
+static inline void RGB_to_XYZ     (double  R,
+                                   double  G,
+                                   double  B,
+                                   double *to_X,
+                                   double *to_Y,
+                                   double *to_Z);
+
 static inline void XYZ_to_LAB     (double  X,
                                    double  Y,
                                    double  Z,
@@ -263,6 +489,95 @@ static inline void Yuv_to_XYZ     (double Y,
                                    double *to_Y,
                                    double *to_Z
                                    );
+
+static inline void XYZ_to_RGB      (double X,
+                                    double Y,
+                                    double Z,
+                                    double *to_R,
+                                    double *to_G,
+                                    double *to_B
+                                    );
+
+static inline void RGB_to_XYZ (double R,
+                               double G,
+                               double B,
+                               double *to_X,
+                               double *to_Y,
+                               double *to_Z)
+{
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+  double colorants[3][3];
+  colorants[0][0] = new_colorant_data[0];
+  colorants[0][1] = new_colorant_data[3];
+  colorants[0][2] = new_colorant_data[6];
+
+  colorants[1][0] = new_colorant_data[1];
+  colorants[1][1] = new_colorant_data[4];
+  colorants[1][2] = new_colorant_data[7];
+
+  colorants[2][0] = new_colorant_data[2];
+  colorants[2][1] = new_colorant_data[5];
+  colorants[2][2] = new_colorant_data[8];
+  //Uncomment the code below to print colorants to screen:
+//printf("CIE.c RGB_to_XYZ: Y values=%.8f %.8f %.8f\n", colorants[1][0], colorants[1][1], colorants[1][2]);
+
+  /* Convert RGB to XYZ */
+
+  *to_X = colorants[0][0]*R
+        + colorants[0][1]*G
+        + colorants[0][2]*B;
+
+  *to_Y = colorants[1][0]*R
+        + colorants[1][1]*G
+        + colorants[1][2]*B;
+
+  *to_Z = colorants[2][0]*R
+        + colorants[2][1]*G
+        + colorants[2][2]*B;
+}
+
+static inline void
+XYZ_to_RGB (double X,
+            double Y,
+            double Z,
+            double *to_R,
+            double *to_G,
+            double *to_B)
+{
+  double inverse_colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+  double colorants[3][3];
+
+  colorants[0][0] = new_colorant_data[0];
+  colorants[0][1] = new_colorant_data[3];
+  colorants[0][2] = new_colorant_data[6];
+
+  colorants[1][0] = new_colorant_data[1];
+  colorants[1][1] = new_colorant_data[4];
+  colorants[1][2] = new_colorant_data[7];
+
+  colorants[2][0] = new_colorant_data[2];
+  colorants[2][1] = new_colorant_data[5];
+  colorants[2][2] = new_colorant_data[8];
+  //Uncomment the code below to print colorants to screen:
+//printf("CIE.c XYZ_to_RGB get colorants: Y values=%.8f %.8f %.8f\n", colorants[1][0], colorants[1][1], colorants[1][2]);
+
+  invert_3x3( colorants, inverse_colorants );
+
+  /* Convert XYZ to RGB */
+
+  *to_R = inverse_colorants[0][0]*X
+        + inverse_colorants[0][1]*Y
+        + inverse_colorants[0][2]*Z;
+
+  *to_G = inverse_colorants[1][0]*X
+        + inverse_colorants[1][1]*Y
+        + inverse_colorants[1][2]*Z;
+
+  *to_B = inverse_colorants[2][0]*X
+        + inverse_colorants[2][1]*Y
+        + inverse_colorants[2][2]*Z;
+}
 
 static inline void
 XYZ_to_LAB (double  X,
@@ -416,8 +731,8 @@ rgba_to_xyz (const Babl *conversion,
              char       *src,
              char       *dst,
              long        n)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
+{//printf("1\n");
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double RGB[3]  = {((double *) src)[0],
@@ -435,8 +750,8 @@ xyz_to_rgba (const Babl *conversion,
              char       *src,
              char       *dst,
              long        n)
-{
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+{//printf("2\n");
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       babl_space_from_xyz (space, (double*)src, (double*) dst);
@@ -450,8 +765,8 @@ static void
 rgba_to_xyza (const Babl *conversion,char *src,
               char *dst,
               long  n)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
+{//printf("3\n");
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       babl_space_to_xyz (space, (double*)src, (double*)dst);
@@ -466,8 +781,8 @@ static void
 xyza_to_rgba (const Babl *conversion,char *src,
               char *dst,
               long  n)
-{
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+{//printf("4\n");
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       babl_space_from_xyz (space, (double*)src, (double*) dst);
@@ -486,7 +801,7 @@ rgba_to_xyY (const Babl *conversion,
              char       *dst,
              long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double XYZ[3], x, y, Y;
@@ -508,7 +823,7 @@ rgba_to_xyYa (const Babl *conversion,char *src,
               char *dst,
               long  n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double alpha = ((double *) src)[3];
@@ -538,7 +853,7 @@ rgba_to_Yuv (const Babl *conversion,char *src,
              char *dst,
              long  n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double XYZ[3], Y, u, v;
@@ -560,7 +875,7 @@ rgba_to_Yuva (const Babl *conversion,char *src,
               char *dst,
               long  n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double alpha = ((double *) src)[3];
@@ -590,7 +905,7 @@ rgbaf_to_xyYaf (const Babl *conversion,
                 float *dst,
                 long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -641,7 +956,7 @@ rgbf_to_xyYf (const Babl *conversion,float *src,
               float *dst,
               long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -692,7 +1007,7 @@ rgbaf_to_xyYf (const Babl *conversion,
                float      *dst,
                long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -745,7 +1060,7 @@ rgbaf_to_Yuvaf (const Babl *conversion,
                 float *dst,
                 long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -797,7 +1112,7 @@ rgbf_to_Yuvf (const Babl *conversion,float *src,
               float *dst,
               long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -849,7 +1164,7 @@ rgbaf_to_Yuvf (const Babl *conversion,
                float      *dst,
                long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
   float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
   float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
@@ -905,7 +1220,7 @@ xyY_to_rgba (const Babl *conversion,
              char       *dst,
              long        n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double x = ((double *) src)[0];
@@ -943,7 +1258,7 @@ xyYa_to_rgba (const Babl *conversion,char *src,
               char *dst,
               long  n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double x     = ((double *) src)[0];
@@ -977,7 +1292,7 @@ Yuv_to_rgba (const Babl *conversion,char *src,
              char *dst,
              long  n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double Y = ((double *) src)[0];
@@ -1015,7 +1330,7 @@ Yuva_to_rgba (const Babl *conversion,char *src,
               char *dst,
               long  n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   while (n--)
     {
       double Y     = ((double *) src)[0];
@@ -1048,7 +1363,7 @@ xyYf_to_rgbf (const Babl *conversion,float *src,
                 float *dst,
                 long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1101,7 +1416,7 @@ xyYf_to_rgbaf (const Babl *conversion,
                float      *dst,
                long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1154,7 +1469,7 @@ xyYaf_to_rgbaf (const Babl *conversion,
                 float      *dst,
                 long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1210,7 +1525,7 @@ Yuvf_to_rgbf (const Babl *conversion,float *src,
               float *dst,
               long   samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1263,7 +1578,7 @@ Yuvf_to_rgbaf (const Babl *conversion,
                float      *dst,
                long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1315,7 +1630,7 @@ Yuvaf_to_rgbaf (const Babl *conversion,
                 float      *dst,
                 long        samples)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1371,13 +1686,18 @@ rgba_to_lab (const Babl *conversion,
              char       *dst,
              long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
   while (n--)
     {
-      double XYZ[3], L, a, b;
+      double R  = ((double *) src)[0];
+      double G  = ((double *) src)[1];
+      double B  = ((double *) src)[2];
+      double X, Y, Z, L, a, b;
 
-      babl_space_to_xyz (space, (double*)src, XYZ);
-      XYZ_to_LAB (XYZ[0], XYZ[1], XYZ[2], &L, &a, &b);
+      //convert RGB to XYZ
+      RGB_to_XYZ (R, G, B, &X, &Y, &Z);
+
+      //convert XYZ to Lab
+      XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
       ((double *) dst)[0] = L;
       ((double *) dst)[1] = a;
@@ -1395,7 +1715,6 @@ lab_to_rgba (const Babl *conversion,
              char       *dst,
              long        n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
   while (n--)
     {
       double L = ((double *) src)[0];
@@ -1408,15 +1727,7 @@ lab_to_rgba (const Babl *conversion,
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
 
       //convert XYZ to RGB
-      {
-        double XYZ[3]  = {X,Y,Z};
-        double RGB[3];
-        babl_space_from_xyz (space, XYZ, RGB);
-        R = RGB[0];
-        G = RGB[1];
-        B = RGB[2];
-      }
-
+      XYZ_to_RGB (X, Y, Z, &R, &G, &B);
       ((double *) dst)[0] = R;
       ((double *) dst)[1] = G;
       ((double *) dst)[2] = B;
@@ -1433,17 +1744,19 @@ rgba_to_laba (const Babl *conversion,
               char       *dst,
               long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
   while (n--)
     {
+      double R     = ((double *) src)[0];
+      double G     = ((double *) src)[1];
+      double B     = ((double *) src)[2];
       double alpha = ((double *) src)[3];
-      double XYZ[3], L, a, b;
+      double X, Y, Z, L, a, b;
 
       //convert RGB to XYZ
-      babl_space_to_xyz (space, (double*)src, XYZ);
+      RGB_to_XYZ (R, G, B, &X, &Y, &Z);
 
       //convert XYZ to Lab
-      XYZ_to_LAB (XYZ[0], XYZ[1], XYZ[2], &L, &a, &b);
+      XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
       ((double *) dst)[0] = L;
       ((double *) dst)[1] = a;
@@ -1461,7 +1774,6 @@ laba_to_rgba (const Babl *conversion,
               char       *dst,
               long        n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
   while (n--)
     {
       double L     = ((double *) src)[0];
@@ -1469,16 +1781,16 @@ laba_to_rgba (const Babl *conversion,
       double b     = ((double *) src)[2];
       double alpha = ((double *) src)[3];
 
-      double X, Y, Z;
+      double X, Y, Z, R, G, B;
 
       //convert Lab to XYZ
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
 
-      {
-        //convert XYZ to RGB
-        double XYZ[3]  = {X,Y,Z};
-        babl_space_from_xyz (space, XYZ, (double*)dst);
-      }
+      //convert XYZ to RGB
+      XYZ_to_RGB (X, Y, Z, &R, &G, &B);
+      ((double *) dst)[0] = R;
+      ((double *) dst)[1] = G;
+      ((double *) dst)[2] = B;
       ((double *) dst)[3] = alpha;
 
       src += sizeof (double) * 4;
@@ -1519,18 +1831,18 @@ rgba_to_lchab (const Babl *conversion,
                char       *dst,
                long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
-
   while (n--)
     {
-      double XYZ[3], L, a, b, C, H;
+      double R = ((double *) src)[0];
+      double G = ((double *) src)[1];
+      double B = ((double *) src)[2];
+      double X, Y, Z, L, a, b, C, H;
 
       //convert RGB to XYZ
-      babl_space_to_xyz (space, (double *)src, XYZ);
+      RGB_to_XYZ (R, G, B, &X, &Y, &Z);
 
       //convert XYZ to Lab
-      XYZ_to_LAB (XYZ[0], XYZ[1], XYZ[2], &L, &a, &b);
-
+      XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
       //convert Lab to LCH(ab)
       ab_to_CHab (a, b, &C, &H);
@@ -1550,14 +1862,12 @@ lchab_to_rgba (const Babl *conversion,
                char       *dst,
                long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
-
   while (n--)
     {
       double L = ((double *) src)[0];
       double C = ((double *) src)[1];
       double H = ((double *) src)[2];
-      double a, b, X, Y, Z;
+      double a, b, X, Y, Z, R, G, B;
 
       //Convert LCH(ab) to Lab
       CHab_to_ab (C, H, &a, &b);
@@ -1566,11 +1876,11 @@ lchab_to_rgba (const Babl *conversion,
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
 
       //Convert XYZ to RGB
-      {
-        double XYZ[3]  = {X,Y,Z};
-        babl_space_from_xyz (space, XYZ, (double*)dst);
-      }
+      XYZ_to_RGB (X, Y, Z, &R, &G, &B);
 
+      ((double *) dst)[0] = R;
+      ((double *) dst)[1] = G;
+      ((double *) dst)[2] = B;
       ((double *) dst)[3] = 1.0;
 
       src += sizeof (double) * 3;
@@ -1584,18 +1894,19 @@ rgba_to_lchaba (const Babl *conversion,
                 char       *dst,
                 long        n)
 {
-  const Babl *space = babl_conversion_get_source_space (conversion);
-
   while (n--)
     {
+      double R = ((double *) src)[0];
+      double G = ((double *) src)[1];
+      double B = ((double *) src)[2];
       double alpha = ((double *) src)[3];
-      double XYZ[3], L, a, b, C, H;
+      double X, Y, Z, L, a, b, C, H;
 
       //convert RGB to XYZ
-      babl_space_to_xyz (space, (double*)src, XYZ);
+      RGB_to_XYZ (R, G, B, &X, &Y, &Z);
 
       //convert XYZ to Lab
-      XYZ_to_LAB (XYZ[0], XYZ[1], XYZ[2], &L, &a, &b);
+      XYZ_to_LAB (X, Y, Z, &L, &a, &b);
 
       //convert Lab to LCH(ab)
       ab_to_CHab (a, b, &C, &H);
@@ -1616,14 +1927,13 @@ lchaba_to_rgba (const Babl *conversion,
                 char       *dst,
                 long        n)
 {
-  const Babl *space = babl_conversion_get_destination_space (conversion);
   while (n--)
     {
       double L     = ((double *) src)[0];
       double C     = ((double *) src)[1];
       double H     = ((double *) src)[2];
       double alpha = ((double *) src)[3];
-      double a, b, X, Y, Z;
+      double a, b, X, Y, Z, R, G, B;
 
       //Convert LCH(ab) to Lab
       CHab_to_ab (C, H, &a, &b);
@@ -1632,10 +1942,11 @@ lchaba_to_rgba (const Babl *conversion,
       LAB_to_XYZ (L, a, b, &X, &Y, &Z);
 
       //Convert XYZ to RGB
-      {
-        double XYZ[3]  = {X,Y,Z};
-        babl_space_from_xyz (space, XYZ, (double*)dst);
-      }
+      XYZ_to_RGB (X, Y, Z, &R, &G, &B);
+
+      ((double *) dst)[0] = R;
+      ((double *) dst)[1] = G;
+      ((double *) dst)[2] = B;
       ((double *) dst)[3] = alpha;
 
       src += sizeof (double) * 4;
@@ -1647,28 +1958,6 @@ lchaba_to_rgba (const Babl *conversion,
 /******** end double RGB/CIE color space conversions ******************/
 
 /******** begin floating point RGB/CIE color space conversions ********/
-
-/* origin: http://www.hackersdelight.org/hdcodetxt/acbrt.c.txt
- * permissions: http://www.hackersdelight.org/permissions.htm
- */
-/* _cbrtf(x)
- * Return cube root of x
- */
-
-static inline float
-_cbrtf (float x)
-{
-  union { float f; uint32_t i; } u = { x };
-
-  u.i = u.i / 4 + u.i / 16;
-  u.i = u.i + u.i / 16;
-  u.i = u.i + u.i / 256;
-  u.i = 0x2a5137a0 + u.i;
-  u.f = 0.33333333f * (2.0f * u.f + x / (u.f * u.f));
-  u.f = 0.33333333f * (2.0f * u.f + x / (u.f * u.f));
-
-  return u.f;
-}
 
 static inline float
 cubef (float f)
@@ -1687,7 +1976,7 @@ Yf_to_Lf (const Babl *conversion,
   while (n--)
     {
       float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -1707,7 +1996,7 @@ Yaf_to_Lf (const Babl *conversion,
   while (n--)
     {
       float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -1728,7 +2017,7 @@ Yaf_to_Laf (const Babl *conversion,
     {
       float yr = src[0];
       float a  = src[1];
-      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
       dst[1] = a;
@@ -1743,17 +2032,23 @@ rgbf_to_Labf (const Babl *conversion,
               float      *src,
               float      *dst,
               long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
-  float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
-  float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
-  float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
-  float m_2_0 = space->space.RGBtoXYZf[6] / D50_WHITE_REF_Z;
-  float m_2_1 = space->space.RGBtoXYZf[7] / D50_WHITE_REF_Z;
-  float m_2_2 = space->space.RGBtoXYZf[8] / D50_WHITE_REF_Z;
+{//printf("5c\n");
+  //const Babl *space = babl_get_space_from_gimp ();
+  //double colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+
+  float m_0_0 = new_colorant_data[0] / D50_WHITE_REF_X;
+  float m_0_1 = new_colorant_data[3] / D50_WHITE_REF_X;
+  float m_0_2 = new_colorant_data[6] / D50_WHITE_REF_X;
+
+  float m_1_0 = new_colorant_data[1] / D50_WHITE_REF_Y;
+  float m_1_1 = new_colorant_data[4] / D50_WHITE_REF_Y;
+  float m_1_2 = new_colorant_data[7] / D50_WHITE_REF_Y;
+
+  float m_2_0 = new_colorant_data[2] / D50_WHITE_REF_Z;
+  float m_2_1 = new_colorant_data[5] / D50_WHITE_REF_Z;
+  float m_2_2 = new_colorant_data[8] / D50_WHITE_REF_Z;
+
   long n = samples;
 
   while (n--)
@@ -1766,9 +2061,9 @@ rgbf_to_Labf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -1788,11 +2083,23 @@ rgbaf_to_Lf (const Babl *conversion,
              float      *src,
              float      *dst,
              long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
+{//printf("6c\n");
+  //const Babl *space = babl_get_space_from_gimp ();
+  //double colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+
+  //float m_0_0 = new_colorant_data[0] / D50_WHITE_REF_X;
+  //float m_0_1 = new_colorant_data[3] / D50_WHITE_REF_X;
+  //float m_0_2 = new_colorant_data[6] / D50_WHITE_REF_X;
+
+  float m_1_0 = new_colorant_data[1] / D50_WHITE_REF_Y;
+  float m_1_1 = new_colorant_data[4] / D50_WHITE_REF_Y;
+  float m_1_2 = new_colorant_data[7] / D50_WHITE_REF_Y;
+
+  //float m_2_0 = new_colorant_data[2] / D50_WHITE_REF_Z;
+  //float m_2_1 = new_colorant_data[5] / D50_WHITE_REF_Z;
+  //float m_2_2 = new_colorant_data[8] / D50_WHITE_REF_Z;
+
   long n = samples;
 
   while (n--)
@@ -1802,7 +2109,7 @@ rgbaf_to_Lf (const Babl *conversion,
       float b = src[2];
 
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
-      float L = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -1816,17 +2123,23 @@ rgbaf_to_Labf (const Babl *conversion,
                float      *src,
                float      *dst,
                long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
-  float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
-  float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
-  float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
-  float m_2_0 = space->space.RGBtoXYZf[6] / D50_WHITE_REF_Z;
-  float m_2_1 = space->space.RGBtoXYZf[7] / D50_WHITE_REF_Z;
-  float m_2_2 = space->space.RGBtoXYZf[8] / D50_WHITE_REF_Z;
+{//printf("7c\n");
+  //const Babl *space = babl_get_space_from_gimp ();
+  //double colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+
+  float m_0_0 = new_colorant_data[0] / D50_WHITE_REF_X;
+  float m_0_1 = new_colorant_data[3] / D50_WHITE_REF_X;
+  float m_0_2 = new_colorant_data[6] / D50_WHITE_REF_X;
+
+  float m_1_0 = new_colorant_data[1] / D50_WHITE_REF_Y;
+  float m_1_1 = new_colorant_data[4] / D50_WHITE_REF_Y;
+  float m_1_2 = new_colorant_data[7] / D50_WHITE_REF_Y;
+
+  float m_2_0 = new_colorant_data[2] / D50_WHITE_REF_Z;
+  float m_2_1 = new_colorant_data[5] / D50_WHITE_REF_Z;
+  float m_2_2 = new_colorant_data[8] / D50_WHITE_REF_Z;
+
   long n = samples;
 
   while (n--)
@@ -1839,9 +2152,9 @@ rgbaf_to_Labf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -1861,17 +2174,23 @@ rgbaf_to_Labaf (const Babl *conversion,
                 float      *src,
                 float      *dst,
                 long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
-  float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
-  float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
-  float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
-  float m_2_0 = space->space.RGBtoXYZf[6] / D50_WHITE_REF_Z;
-  float m_2_1 = space->space.RGBtoXYZf[7] / D50_WHITE_REF_Z;
-  float m_2_2 = space->space.RGBtoXYZf[8] / D50_WHITE_REF_Z;
+{//printf("8c\n");
+  //const Babl *space = babl_get_space_from_gimp ();
+  //double colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+
+  float m_0_0 = new_colorant_data[0] / D50_WHITE_REF_X;
+  float m_0_1 = new_colorant_data[3] / D50_WHITE_REF_X;
+  float m_0_2 = new_colorant_data[6] / D50_WHITE_REF_X;
+
+  float m_1_0 = new_colorant_data[1] / D50_WHITE_REF_Y;
+  float m_1_1 = new_colorant_data[4] / D50_WHITE_REF_Y;
+  float m_1_2 = new_colorant_data[7] / D50_WHITE_REF_Y;
+
+  float m_2_0 = new_colorant_data[2] / D50_WHITE_REF_Z;
+  float m_2_1 = new_colorant_data[5] / D50_WHITE_REF_Z;
+  float m_2_2 = new_colorant_data[8] / D50_WHITE_REF_Z;
+
   long n = samples;
 
   while (n--)
@@ -1885,9 +2204,9 @@ rgbaf_to_Labaf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -1942,8 +2261,8 @@ Labf_to_rgbf (const Babl *conversion,
               float      *src,
               float      *dst,
               long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
+{//printf("9\n");
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -1987,8 +2306,8 @@ static void
 Labf_to_rgbaf (const Babl *conversion,float *src,
                float *dst,
                long   samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
+{//printf("10\n");
+  const Babl *space = babl_get_space_from_gimp ();
   float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
   float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
   float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
@@ -2033,18 +2352,42 @@ Labaf_to_rgbaf (const Babl *conversion,
                 float      *src,
                 float      *dst,
                 long        samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  float m_0_0 = space->space.XYZtoRGBf[0] * D50_WHITE_REF_X;
-  float m_0_1 = space->space.XYZtoRGBf[1] * D50_WHITE_REF_Y;
-  float m_0_2 = space->space.XYZtoRGBf[2] * D50_WHITE_REF_Z;
-  float m_1_0 = space->space.XYZtoRGBf[3] * D50_WHITE_REF_X;
-  float m_1_1 = space->space.XYZtoRGBf[4] * D50_WHITE_REF_Y;
-  float m_1_2 = space->space.XYZtoRGBf[5] * D50_WHITE_REF_Z;
-  float m_2_0 = space->space.XYZtoRGBf[6] * D50_WHITE_REF_X;
-  float m_2_1 = space->space.XYZtoRGBf[7] * D50_WHITE_REF_Y;
-  float m_2_2 = space->space.XYZtoRGBf[8] * D50_WHITE_REF_Z;
+{//printf("11\n");
+  //const Babl *space = babl_get_space_from_gimp ();
+  double inverse_colorants[3][3], colorants[3][3];
+  double *new_colorant_data = babl_get_user_data (colorant_babl);
+  float m_0_0, m_0_1, m_0_2, m_1_0, m_1_1, m_1_2, m_2_0, m_2_1, m_2_2;
   long n = samples;
+
+  colorants[0][0] = new_colorant_data[0];
+  colorants[0][1] = new_colorant_data[3];
+  colorants[0][2] = new_colorant_data[6];
+
+  colorants[1][0] = new_colorant_data[1];
+  colorants[1][1] = new_colorant_data[4];
+  colorants[1][2] = new_colorant_data[7];
+
+  colorants[2][0] = new_colorant_data[2];
+  colorants[2][1] = new_colorant_data[5];
+  colorants[2][2] = new_colorant_data[8];
+  //Uncomment the code below to print colorants to screen:
+//printf("CIE.c XYZ_to_RGB get colorants: Y values=%.8f %.8f %.8f\n", colorants[1][0], colorants[1][1], colorants[1][2]);
+
+  invert_3x3( colorants, inverse_colorants );
+
+  /* Convert XYZ to RGB */
+
+  m_0_0 = inverse_colorants[0][0] * D50_WHITE_REF_X;
+  m_0_1 = inverse_colorants[0][1] * D50_WHITE_REF_Y;
+  m_0_2 = inverse_colorants[0][2] * D50_WHITE_REF_Z;
+
+  m_1_0 = inverse_colorants[1][0] * D50_WHITE_REF_X;
+  m_1_1 = inverse_colorants[1][1] * D50_WHITE_REF_Y;
+  m_1_2 = inverse_colorants[1][2] * D50_WHITE_REF_Z;
+
+  m_2_0 = inverse_colorants[2][0] * D50_WHITE_REF_X;
+  m_2_1 = inverse_colorants[2][1] * D50_WHITE_REF_Y;
+  m_2_2 = inverse_colorants[2][2] * D50_WHITE_REF_Z;
 
   while (n--)
     {
@@ -2190,358 +2533,6 @@ Lchabaf_to_Labaf (const Babl *conversion,
       dst += 4;
     }
 }
-
-#if defined(USE_SSE2)
-
-/* This is an SSE2 version of Halley's method for approximating the
- * cube root of an IEEE float implementation.
- *
- * The scalar version is as follows:
- *
- * static inline float
- * _cbrt_5f (float x)
- * {
- *   union { float f; uint32_t i; } u = { x };
- *
- *   u.i = u.i / 3 + 709921077;
- *   return u.f;
- * }
- *
- * static inline float
- * _cbrta_halleyf (float a, float R)
- * {
- *   float a3 = a * a * a;
- *   float b = a * (a3 + R + R) / (a3 + a3 + R);
- *   return b;
- * }
- *
- * static inline float
- * _cbrtf (float x)
- * {
- *   float a;
- *
- *   a = _cbrt_5f (x);
- *   a = _cbrta_halleyf (a, x);
- *   a = _cbrta_halleyf (a, x);
- *   return a;
- * }
- *
- * The above scalar version seems to have originated from
- * http://metamerist.com/cbrt/cbrt.htm but that's not accessible
- * anymore. At present there's a copy in CubeRoot.cpp in the Skia
- * sources that's licensed under a BSD-style license. There's some
- * discussion on the implementation at
- * http://www.voidcn.com/article/p-gpwztojr-wt.html.
- *
- * Note that Darktable also has an SSE2 version of the same algorithm,
- * but uses only a single iteration of Halley's method, which is too
- * coarse.
- */
-/* Return cube roots of the four single-precision floating point
- * components of x.
- */
-static inline __m128
-_cbrtf_ps_sse2 (__m128 x)
-{
-  const __m128i magic = _mm_set1_epi32 (709921077);
-
-  __m128i xi = _mm_castps_si128 (x);
-  __m128 xi_3 = _mm_div_ps (_mm_cvtepi32_ps (xi), _mm_set1_ps (3.0f));
-  __m128i ai = _mm_add_epi32 (_mm_cvtps_epi32 (xi_3), magic);
-  __m128 a = _mm_castsi128_ps (ai);
-
-  __m128 a3 = _mm_mul_ps (_mm_mul_ps (a, a), a);
-  __m128 divisor = _mm_add_ps (_mm_add_ps (a3, a3), x);
-  a = _mm_div_ps (_mm_mul_ps (a, _mm_add_ps (a3, _mm_add_ps (x, x))), divisor);
-
-  a3 = _mm_mul_ps (_mm_mul_ps (a, a), a);
-  divisor = _mm_add_ps (_mm_add_ps (a3, a3), x);
-  a = _mm_div_ps (_mm_mul_ps (a, _mm_add_ps (a3, _mm_add_ps (x, x))), divisor);
-
-  return a;
-}
-
-static inline __m128
-lab_r_to_f_sse2 (__m128 r)
-{
-  const __m128 epsilon = _mm_set1_ps (LAB_EPSILON);
-  const __m128 kappa = _mm_set1_ps (LAB_KAPPA);
-
-  const __m128 f_big = _cbrtf_ps_sse2 (r);
-
-  const __m128 f_small = _mm_div_ps (_mm_add_ps (_mm_mul_ps (kappa, r), _mm_set1_ps (16.0f)),
-                                     _mm_set1_ps (116.0f));
-
-  const __m128 mask = _mm_cmpgt_ps (r, epsilon);
-  const __m128 f = _mm_or_ps (_mm_and_ps (mask, f_big), _mm_andnot_ps (mask, f_small));
-  return f;
-}
-
-static void
-Yf_to_Lf_sse2 (const Babl  *conversion, 
-               const float *src, 
-               float       *dst, 
-               long         samples)
-{
-  long i = 0;
-  long remainder;
-
-  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
-    {
-      const long n = (samples / 4) * 4;
-
-      for ( ; i < n; i += 4)
-        {
-          __m128 Y = _mm_load_ps (src);
-
-          __m128 fy = lab_r_to_f_sse2 (Y);
-
-          __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
-
-          _mm_store_ps (dst, L);
-
-          src += 4;
-          dst += 4;
-        }
-    }
-
-  remainder = samples - i;
-  while (remainder--)
-    {
-      float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
-
-      dst[0] = L;
-
-      src++;
-      dst++;
-    }
-}
-
-static void
-Yaf_to_Lf_sse2 (const Babl  *conversion, 
-                const float *src, 
-                float       *dst, 
-                long         samples)
-{
-  long i = 0;
-  long remainder;
-
-  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
-    {
-      const long n = (samples / 4) * 4;
-
-      for ( ; i < n; i += 4)
-        {
-          __m128 YaYa0 = _mm_load_ps (src);
-          __m128 YaYa1 = _mm_load_ps (src + 4);
-
-          __m128 Y = _mm_shuffle_ps (YaYa0, YaYa1, _MM_SHUFFLE (2, 0, 2, 0));
-
-          __m128 fy = lab_r_to_f_sse2 (Y);
-
-          __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
-
-          _mm_store_ps (dst, L);
-
-          src += 8;
-          dst += 4;
-        }
-    }
-
-  remainder = samples - i;
-  while (remainder--)
-    {
-      float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
-
-      dst[0] = L;
-
-      src += 2;
-      dst += 1;
-    }
-}
-
-static void
-rgbaf_to_Lf_sse2 (const Babl  *conversion, 
-                  const float *src, 
-                  float       *dst, 
-                  long         samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  const float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  const float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  const float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
-  long i = 0;
-  long remainder;
-
-  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
-    {
-      const long    n = (samples / 4) * 4;
-      const __m128 m_1_0_v = _mm_set1_ps (m_1_0);
-      const __m128 m_1_1_v = _mm_set1_ps (m_1_1);
-      const __m128 m_1_2_v = _mm_set1_ps (m_1_2);
-
-      for ( ; i < n; i += 4)
-        {
-          __m128 rgba0 = _mm_load_ps (src);
-          __m128 rgba1 = _mm_load_ps (src + 4);
-          __m128 rgba2 = _mm_load_ps (src + 8);
-          __m128 rgba3 = _mm_load_ps (src + 12);
-
-          __m128 r = rgba0;
-          __m128 g = rgba1;
-          __m128 b = rgba2;
-          __m128 a = rgba3;
-          _MM_TRANSPOSE4_PS (r, g, b, a);
-
-          {
-            __m128 yr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_1_0_v, r), _mm_mul_ps (m_1_1_v, g)),
-                                    _mm_mul_ps (m_1_2_v, b));
-
-            __m128 fy = lab_r_to_f_sse2 (yr);
-
-            __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
-
-            _mm_store_ps (dst, L);
-          }
-
-          src += 16;
-          dst += 4;
-        }
-    }
-
-  remainder = samples - i;
-  while (remainder--)
-    {
-      float r = src[0];
-      float g = src[1];
-      float b = src[2];
-
-      float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
-      float L = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
-
-      dst[0] = L;
-
-      src += 4;
-      dst += 1;
-    }
-}
-
-static void
-rgbaf_to_Labaf_sse2 (const Babl  *conversion, 
-                     const float *src, 
-                     float       *dst, 
-                     long         samples)
-{
-  const Babl *space = babl_conversion_get_source_space (conversion);
-  const float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
-  const float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
-  const float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
-  const float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
-  const float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
-  const float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
-  const float m_2_0 = space->space.RGBtoXYZf[6] / D50_WHITE_REF_Z;
-  const float m_2_1 = space->space.RGBtoXYZf[7] / D50_WHITE_REF_Z;
-  const float m_2_2 = space->space.RGBtoXYZf[8] / D50_WHITE_REF_Z;
-  long i = 0;
-  long remainder;
-
-  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
-    {
-      const long    n = (samples / 4) * 4;
-      const __m128 m_0_0_v = _mm_set1_ps (m_0_0);
-      const __m128 m_0_1_v = _mm_set1_ps (m_0_1);
-      const __m128 m_0_2_v = _mm_set1_ps (m_0_2);
-      const __m128 m_1_0_v = _mm_set1_ps (m_1_0);
-      const __m128 m_1_1_v = _mm_set1_ps (m_1_1);
-      const __m128 m_1_2_v = _mm_set1_ps (m_1_2);
-      const __m128 m_2_0_v = _mm_set1_ps (m_2_0);
-      const __m128 m_2_1_v = _mm_set1_ps (m_2_1);
-      const __m128 m_2_2_v = _mm_set1_ps (m_2_2);
-
-      for ( ; i < n; i += 4)
-        {
-          __m128 Laba0;
-          __m128 Laba1;
-          __m128 Laba2;
-          __m128 Laba3;
-
-          __m128 rgba0 = _mm_load_ps (src);
-          __m128 rgba1 = _mm_load_ps (src + 4);
-          __m128 rgba2 = _mm_load_ps (src + 8);
-          __m128 rgba3 = _mm_load_ps (src + 12);
-
-          __m128 r = rgba0;
-          __m128 g = rgba1;
-          __m128 b = rgba2;
-          __m128 a = rgba3;
-          _MM_TRANSPOSE4_PS (r, g, b, a);
-
-          {
-            __m128 xr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_0_0_v, r), _mm_mul_ps (m_0_1_v, g)),
-                                    _mm_mul_ps (m_0_2_v, b));
-            __m128 yr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_1_0_v, r), _mm_mul_ps (m_1_1_v, g)),
-                                    _mm_mul_ps (m_1_2_v, b));
-            __m128 zr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_2_0_v, r), _mm_mul_ps (m_2_1_v, g)),
-                                    _mm_mul_ps (m_2_2_v, b));
-
-            __m128 fx = lab_r_to_f_sse2 (xr);
-            __m128 fy = lab_r_to_f_sse2 (yr);
-            __m128 fz = lab_r_to_f_sse2 (zr);
-
-            __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
-            __m128 A = _mm_mul_ps (_mm_set1_ps (500.0f), _mm_sub_ps (fx, fy));
-            __m128 B = _mm_mul_ps (_mm_set1_ps (200.0f), _mm_sub_ps (fy, fz));
-
-            Laba0 = L;
-            Laba1 = A;
-            Laba2 = B;
-            Laba3 = a;
-            _MM_TRANSPOSE4_PS (Laba0, Laba1, Laba2, Laba3);
-          }
-
-          _mm_store_ps (dst, Laba0);
-          _mm_store_ps (dst + 4, Laba1);
-          _mm_store_ps (dst + 8, Laba2);
-          _mm_store_ps (dst + 12, Laba3);
-
-          src += 16;
-          dst += 16;
-        }
-    }
-
-  remainder = samples - i;
-  while (remainder--)
-    {
-      float r = src[0];
-      float g = src[1];
-      float b = src[2];
-      float a = src[3];
-
-      float xr = m_0_0 * r + m_0_1 * g + m_0_2 * b;
-      float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
-      float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
-
-      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
-
-      float L = 116.0f * fy - 16.0f;
-      float A = 500.0f * (fx - fy);
-      float B = 200.0f * (fy - fz);
-
-      dst[0] = L;
-      dst[1] = A;
-      dst[2] = B;
-      dst[3] = a;
-
-      src += 4;
-      dst += 4;
-    }
-}
-
-#endif /* defined(USE_SSE2) */
 
 static void
 conversions (void)
@@ -2846,37 +2837,6 @@ conversions (void)
     "linear", Yuvaf_to_rgbaf,
     NULL
   );
-#if defined(USE_SSE2)
-
-  if (babl_cpu_accel_get_support () & BABL_CPU_ACCEL_X86_SSE2)
-    {
-      babl_conversion_new (
-        babl_format ("RGBA float"),
-        babl_format ("CIE Lab alpha float"),
-        "linear", rgbaf_to_Labaf_sse2,
-        NULL
-      );
-      babl_conversion_new (
-        babl_format ("Y float"),
-        babl_format ("CIE L float"),
-        "linear", Yf_to_Lf_sse2,
-        NULL
-      );
-      babl_conversion_new (
-        babl_format ("YA float"),
-        babl_format ("CIE L float"),
-        "linear", Yaf_to_Lf_sse2,
-        NULL
-      );
-      babl_conversion_new (
-        babl_format ("RGBA float"),
-        babl_format ("CIE L float"),
-        "linear", rgbaf_to_Lf_sse2,
-        NULL
-      );
-    }
-
-#endif /* defined(USE_SSE2) */
 
   rgbcie_init ();
 }
