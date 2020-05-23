@@ -24,6 +24,10 @@
 #include <stdint.h>
 #include <string.h>
 
+/*#if defined(USE_SSE2)
+#include <emmintrin.h>
+#endif  defined(USE_SSE2) */
+
 #include "babl-internal.h"
 #include "extensions/util.h"
 
@@ -1959,6 +1963,28 @@ lchaba_to_rgba (const Babl *conversion,
 
 /******** begin floating point RGB/CIE color space conversions ********/
 
+/* origin: http://www.hackersdelight.org/hdcodetxt/acbrt.c.txt
+ * permissions: http://www.hackersdelight.org/permissions.htm
+ */
+/* _cbrtf(x)
+ * Return cube root of x
+ */
+
+static inline float
+_cbrtf (float x)
+{
+  union { float f; uint32_t i; } u = { x };
+
+  u.i = u.i / 4 + u.i / 16;
+  u.i = u.i + u.i / 16;
+  u.i = u.i + u.i / 256;
+  u.i = 0x2a5137a0 + u.i;
+  u.f = 0.33333333f * (2.0f * u.f + x / (u.f * u.f));
+  u.f = 0.33333333f * (2.0f * u.f + x / (u.f * u.f));
+
+  return u.f;
+}
+
 static inline float
 cubef (float f)
 {
@@ -1976,7 +2002,7 @@ Yf_to_Lf (const Babl *conversion,
   while (n--)
     {
       float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -1996,7 +2022,7 @@ Yaf_to_Lf (const Babl *conversion,
   while (n--)
     {
       float yr = src[0];
-      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -2017,7 +2043,7 @@ Yaf_to_Laf (const Babl *conversion,
     {
       float yr = src[0];
       float a  = src[1];
-      float L  = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
       dst[1] = a;
@@ -2061,9 +2087,9 @@ rgbf_to_Labf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -2109,7 +2135,7 @@ rgbaf_to_Lf (const Babl *conversion,
       float b = src[2];
 
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
-      float L = yr > LAB_EPSILON ? 116.0f * cbrtf (yr) - 16 : LAB_KAPPA * yr;
+      float L = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
 
       dst[0] = L;
 
@@ -2152,9 +2178,9 @@ rgbaf_to_Labf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -2204,9 +2230,9 @@ rgbaf_to_Labaf (const Babl *conversion,
       float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
       float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
 
-      float fx = xr > LAB_EPSILON ? cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
-      float fy = yr > LAB_EPSILON ? cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
-      float fz = zr > LAB_EPSILON ? cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
 
       float L = 116.0f * fy - 16.0f;
       float A = 500.0f * (fx - fy);
@@ -2534,6 +2560,358 @@ Lchabaf_to_Labaf (const Babl *conversion,
     }
 }
 
+/*#if defined(USE_SSE2)
+
+ This is an SSE2 version of Halley's method for approximating the
+ * cube root of an IEEE float implementation.
+ *
+ * The scalar version is as follows:
+ *
+ * static inline float
+ * _cbrt_5f (float x)
+ * {
+ *   union { float f; uint32_t i; } u = { x };
+ *
+ *   u.i = u.i / 3 + 709921077;
+ *   return u.f;
+ * }
+ *
+ * static inline float
+ * _cbrta_halleyf (float a, float R)
+ * {
+ *   float a3 = a * a * a;
+ *   float b = a * (a3 + R + R) / (a3 + a3 + R);
+ *   return b;
+ * }
+ *
+ * static inline float
+ * _cbrtf (float x)
+ * {
+ *   float a;
+ *
+ *   a = _cbrt_5f (x);
+ *   a = _cbrta_halleyf (a, x);
+ *   a = _cbrta_halleyf (a, x);
+ *   return a;
+ * }
+ *
+ * The above scalar version seems to have originated from
+ * http://metamerist.com/cbrt/cbrt.htm but that's not accessible
+ * anymore. At present there's a copy in CubeRoot.cpp in the Skia
+ * sources that's licensed under a BSD-style license. There's some
+ * discussion on the implementation at
+ * http://www.voidcn.com/article/p-gpwztojr-wt.html.
+ *
+ * Note that Darktable also has an SSE2 version of the same algorithm,
+ * but uses only a single iteration of Halley's method, which is too
+ * coarse.
+ */
+/* Return cube roots of the four single-precision floating point
+ * components of x.
+ */
+/*static inline __m128
+_cbrtf_ps_sse2 (__m128 x)
+{
+  const __m128i magic = _mm_set1_epi32 (709921077);
+
+  __m128i xi = _mm_castps_si128 (x);
+  __m128 xi_3 = _mm_div_ps (_mm_cvtepi32_ps (xi), _mm_set1_ps (3.0f));
+  __m128i ai = _mm_add_epi32 (_mm_cvtps_epi32 (xi_3), magic);
+  __m128 a = _mm_castsi128_ps (ai);
+
+  __m128 a3 = _mm_mul_ps (_mm_mul_ps (a, a), a);
+  __m128 divisor = _mm_add_ps (_mm_add_ps (a3, a3), x);
+  a = _mm_div_ps (_mm_mul_ps (a, _mm_add_ps (a3, _mm_add_ps (x, x))), divisor);
+
+  a3 = _mm_mul_ps (_mm_mul_ps (a, a), a);
+  divisor = _mm_add_ps (_mm_add_ps (a3, a3), x);
+  a = _mm_div_ps (_mm_mul_ps (a, _mm_add_ps (a3, _mm_add_ps (x, x))), divisor);
+
+  return a;
+}
+
+static inline __m128
+lab_r_to_f_sse2 (__m128 r)
+{
+  const __m128 epsilon = _mm_set1_ps (LAB_EPSILON);
+  const __m128 kappa = _mm_set1_ps (LAB_KAPPA);
+
+  const __m128 f_big = _cbrtf_ps_sse2 (r);
+
+  const __m128 f_small = _mm_div_ps (_mm_add_ps (_mm_mul_ps (kappa, r), _mm_set1_ps (16.0f)),
+                                     _mm_set1_ps (116.0f));
+
+  const __m128 mask = _mm_cmpgt_ps (r, epsilon);
+  const __m128 f = _mm_or_ps (_mm_and_ps (mask, f_big), _mm_andnot_ps (mask, f_small));
+  return f;
+}
+
+static void
+Yf_to_Lf_sse2 (const Babl  *conversion, 
+               const float *src, 
+               float       *dst, 
+               long         samples)
+{
+  long i = 0;
+  long remainder;
+
+  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
+    {
+      const long n = (samples / 4) * 4;
+
+      for ( ; i < n; i += 4)
+        {
+          __m128 Y = _mm_load_ps (src);
+
+          __m128 fy = lab_r_to_f_sse2 (Y);
+
+          __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
+
+          _mm_store_ps (dst, L);
+
+          src += 4;
+          dst += 4;
+        }
+    }
+
+  remainder = samples - i;
+  while (remainder--)
+    {
+      float yr = src[0];
+      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+
+      dst[0] = L;
+
+      src++;
+      dst++;
+    }
+}
+
+static void
+Yaf_to_Lf_sse2 (const Babl  *conversion, 
+                const float *src, 
+                float       *dst, 
+                long         samples)
+{
+  long i = 0;
+  long remainder;
+
+  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
+    {
+      const long n = (samples / 4) * 4;
+
+      for ( ; i < n; i += 4)
+        {
+          __m128 YaYa0 = _mm_load_ps (src);
+          __m128 YaYa1 = _mm_load_ps (src + 4);
+
+          __m128 Y = _mm_shuffle_ps (YaYa0, YaYa1, _MM_SHUFFLE (2, 0, 2, 0));
+
+          __m128 fy = lab_r_to_f_sse2 (Y);
+
+          __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
+
+          _mm_store_ps (dst, L);
+
+          src += 8;
+          dst += 4;
+        }
+    }
+
+  remainder = samples - i;
+  while (remainder--)
+    {
+      float yr = src[0];
+      float L  = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+
+      dst[0] = L;
+
+      src += 2;
+      dst += 1;
+    }
+}
+
+static void
+rgbaf_to_Lf_sse2 (const Babl  *conversion, 
+                  const float *src, 
+                  float       *dst, 
+                  long         samples)
+{
+  const Babl *space = babl_conversion_get_source_space (conversion);
+  const float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
+  const float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
+  const float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
+  long i = 0;
+  long remainder;
+
+  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
+    {
+      const long    n = (samples / 4) * 4;
+      const __m128 m_1_0_v = _mm_set1_ps (m_1_0);
+      const __m128 m_1_1_v = _mm_set1_ps (m_1_1);
+      const __m128 m_1_2_v = _mm_set1_ps (m_1_2);
+
+      for ( ; i < n; i += 4)
+        {
+          __m128 rgba0 = _mm_load_ps (src);
+          __m128 rgba1 = _mm_load_ps (src + 4);
+          __m128 rgba2 = _mm_load_ps (src + 8);
+          __m128 rgba3 = _mm_load_ps (src + 12);
+
+          __m128 r = rgba0;
+          __m128 g = rgba1;
+          __m128 b = rgba2;
+          __m128 a = rgba3;
+          _MM_TRANSPOSE4_PS (r, g, b, a);
+
+          {
+            __m128 yr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_1_0_v, r), _mm_mul_ps (m_1_1_v, g)),
+                                    _mm_mul_ps (m_1_2_v, b));
+
+            __m128 fy = lab_r_to_f_sse2 (yr);
+
+            __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
+
+            _mm_store_ps (dst, L);
+          }
+
+          src += 16;
+          dst += 4;
+        }
+    }
+
+  remainder = samples - i;
+  while (remainder--)
+    {
+      float r = src[0];
+      float g = src[1];
+      float b = src[2];
+
+      float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
+      float L = yr > LAB_EPSILON ? 116.0f * _cbrtf (yr) - 16 : LAB_KAPPA * yr;
+
+      dst[0] = L;
+
+      src += 4;
+      dst += 1;
+    }
+}
+
+static void
+rgbaf_to_Labaf_sse2 (const Babl  *conversion, 
+                     const float *src, 
+                     float       *dst, 
+                     long         samples)
+{
+  const Babl *space = babl_conversion_get_source_space (conversion);
+  const float m_0_0 = space->space.RGBtoXYZf[0] / D50_WHITE_REF_X;
+  const float m_0_1 = space->space.RGBtoXYZf[1] / D50_WHITE_REF_X;
+  const float m_0_2 = space->space.RGBtoXYZf[2] / D50_WHITE_REF_X;
+  const float m_1_0 = space->space.RGBtoXYZf[3] / D50_WHITE_REF_Y;
+  const float m_1_1 = space->space.RGBtoXYZf[4] / D50_WHITE_REF_Y;
+  const float m_1_2 = space->space.RGBtoXYZf[5] / D50_WHITE_REF_Y;
+  const float m_2_0 = space->space.RGBtoXYZf[6] / D50_WHITE_REF_Z;
+  const float m_2_1 = space->space.RGBtoXYZf[7] / D50_WHITE_REF_Z;
+  const float m_2_2 = space->space.RGBtoXYZf[8] / D50_WHITE_REF_Z;
+  long i = 0;
+  long remainder;
+
+  if (((uintptr_t) src % 16) + ((uintptr_t) dst % 16) == 0)
+    {
+      const long    n = (samples / 4) * 4;
+      const __m128 m_0_0_v = _mm_set1_ps (m_0_0);
+      const __m128 m_0_1_v = _mm_set1_ps (m_0_1);
+      const __m128 m_0_2_v = _mm_set1_ps (m_0_2);
+      const __m128 m_1_0_v = _mm_set1_ps (m_1_0);
+      const __m128 m_1_1_v = _mm_set1_ps (m_1_1);
+      const __m128 m_1_2_v = _mm_set1_ps (m_1_2);
+      const __m128 m_2_0_v = _mm_set1_ps (m_2_0);
+      const __m128 m_2_1_v = _mm_set1_ps (m_2_1);
+      const __m128 m_2_2_v = _mm_set1_ps (m_2_2);
+
+      for ( ; i < n; i += 4)
+        {
+          __m128 Laba0;
+          __m128 Laba1;
+          __m128 Laba2;
+          __m128 Laba3;
+
+          __m128 rgba0 = _mm_load_ps (src);
+          __m128 rgba1 = _mm_load_ps (src + 4);
+          __m128 rgba2 = _mm_load_ps (src + 8);
+          __m128 rgba3 = _mm_load_ps (src + 12);
+
+          __m128 r = rgba0;
+          __m128 g = rgba1;
+          __m128 b = rgba2;
+          __m128 a = rgba3;
+          _MM_TRANSPOSE4_PS (r, g, b, a);
+
+          {
+            __m128 xr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_0_0_v, r), _mm_mul_ps (m_0_1_v, g)),
+                                    _mm_mul_ps (m_0_2_v, b));
+            __m128 yr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_1_0_v, r), _mm_mul_ps (m_1_1_v, g)),
+                                    _mm_mul_ps (m_1_2_v, b));
+            __m128 zr = _mm_add_ps (_mm_add_ps (_mm_mul_ps (m_2_0_v, r), _mm_mul_ps (m_2_1_v, g)),
+                                    _mm_mul_ps (m_2_2_v, b));
+
+            __m128 fx = lab_r_to_f_sse2 (xr);
+            __m128 fy = lab_r_to_f_sse2 (yr);
+            __m128 fz = lab_r_to_f_sse2 (zr);
+
+            __m128 L = _mm_sub_ps (_mm_mul_ps (_mm_set1_ps (116.0f), fy), _mm_set1_ps (16.0f));
+            __m128 A = _mm_mul_ps (_mm_set1_ps (500.0f), _mm_sub_ps (fx, fy));
+            __m128 B = _mm_mul_ps (_mm_set1_ps (200.0f), _mm_sub_ps (fy, fz));
+
+            Laba0 = L;
+            Laba1 = A;
+            Laba2 = B;
+            Laba3 = a;
+            _MM_TRANSPOSE4_PS (Laba0, Laba1, Laba2, Laba3);
+          }
+
+          _mm_store_ps (dst, Laba0);
+          _mm_store_ps (dst + 4, Laba1);
+          _mm_store_ps (dst + 8, Laba2);
+          _mm_store_ps (dst + 12, Laba3);
+
+          src += 16;
+          dst += 16;
+        }
+    }
+
+  remainder = samples - i;
+  while (remainder--)
+    {
+      float r = src[0];
+      float g = src[1];
+      float b = src[2];
+      float a = src[3];
+
+      float xr = m_0_0 * r + m_0_1 * g + m_0_2 * b;
+      float yr = m_1_0 * r + m_1_1 * g + m_1_2 * b;
+      float zr = m_2_0 * r + m_2_1 * g + m_2_2 * b;
+
+      float fx = xr > LAB_EPSILON ? _cbrtf (xr) : (LAB_KAPPA * xr + 16.0f) / 116.0f;
+      float fy = yr > LAB_EPSILON ? _cbrtf (yr) : (LAB_KAPPA * yr + 16.0f) / 116.0f;
+      float fz = zr > LAB_EPSILON ? _cbrtf (zr) : (LAB_KAPPA * zr + 16.0f) / 116.0f;
+
+      float L = 116.0f * fy - 16.0f;
+      float A = 500.0f * (fx - fy);
+      float B = 200.0f * (fy - fz);
+
+      dst[0] = L;
+      dst[1] = A;
+      dst[2] = B;
+      dst[3] = a;
+
+      src += 4;
+      dst += 4;
+    }
+}
+
+#endif  defined(USE_SSE2) */
+
 static void
 conversions (void)
 {
@@ -2837,6 +3215,37 @@ conversions (void)
     "linear", Yuvaf_to_rgbaf,
     NULL
   );
+/*#if defined(USE_SSE2)
+
+  if (babl_cpu_accel_get_support () & BABL_CPU_ACCEL_X86_SSE2)
+    {
+      babl_conversion_new (
+        babl_format ("RGBA float"),
+        babl_format ("CIE Lab alpha float"),
+        "linear", rgbaf_to_Labaf_sse2,
+        NULL
+      );
+      babl_conversion_new (
+        babl_format ("Y float"),
+        babl_format ("CIE L float"),
+        "linear", Yf_to_Lf_sse2,
+        NULL
+      );
+      babl_conversion_new (
+        babl_format ("YA float"),
+        babl_format ("CIE L float"),
+        "linear", Yaf_to_Lf_sse2,
+        NULL
+      );
+      babl_conversion_new (
+        babl_format ("RGBA float"),
+        babl_format ("CIE L float"),
+        "linear", rgbaf_to_Lf_sse2,
+        NULL
+      );
+    }
+
+#endif  defined(USE_SSE2) */
 
   rgbcie_init ();
 }
