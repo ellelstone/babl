@@ -27,9 +27,9 @@
 #include "git-version.h"
 
 #ifdef _WIN32
-#define FALLBACK_CACHE_PATH  "C:/babl-fishes.txt"
+#define FALLBACK_CACHE_PATH  "C:/babl-fishes-cce210.txt"
 #else
-#define FALLBACK_CACHE_PATH  "/tmp/babl-fishes.txt"
+#define FALLBACK_CACHE_PATH  "/tmp/babl-fishes-cce210.txt"
 #endif
 
 static int
@@ -83,16 +83,16 @@ fish_cache_path (void)
   path[sizeof (path) - 1] = '\0';
 #ifndef _WIN32
   if (getenv ("XDG_CACHE_HOME"))
-    snprintf (path, sizeof (path), "%s/babl/babl-fishes", getenv("XDG_CACHE_HOME"));
+    snprintf (path, sizeof (path), "%s/babl/babl-fishes-cce210.txt", getenv("XDG_CACHE_HOME"));
   else if (getenv ("HOME"))
-    snprintf (path, sizeof (path), "%s/.cache/babl/babl-fishes", getenv("HOME"));
+    snprintf (path, sizeof (path), "%s/.cache/babl/babl-fishes-cce210.txt", getenv("HOME"));
 #else
 {
   char win32path[4096];
   if (SHGetFolderPathA (NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, win32path) == S_OK)
-    snprintf (path, sizeof (path), "%s\\%s\\babl-fishes.txt", win32path, BABL_LIBRARY);
+    snprintf (path, sizeof (path), "%s\\%s\\babl-fishes-cce210.txt", win32path, BABL_LIBRARY);
   else if (getenv ("TEMP"))
-    snprintf (path, sizeof (path), "%s\\babl-fishes.txt", getenv("TEMP"));
+    snprintf (path, sizeof (path), "%s\\babl-fishes-cce210.txt", getenv("TEMP"));
 }
 #endif
 
