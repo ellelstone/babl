@@ -19,11 +19,16 @@
 #ifndef _BASE_UTIL_H
 #define _BASE_UTIL_H
 
+#define LAB_EPSILON       (216.0f / 24389.0f)
+#define LAB_KAPPA         (24389.0f / 27.0f)
+
 #include <assert.h>
 #include <math.h>
-#include "pow-24.h"
-#include <babl.h>
 
+//#include "pow-24.h"
+#include <stdint.h> //from pow-24.h
+
+#include <babl.h>
 
 #define BABL_PLANAR_SANITY  \
   {                         \
@@ -73,55 +78,56 @@ babl_epsilon_for_zero_float (float value)
 #define BABL_USE_SRGB_GAMMA
 
 #ifdef BABL_USE_SRGB_GAMMA
+
+/* srgbtrc 2.4,   1.0 / 1.055,  0.055 / 1.055,     1.0 / 12.92,     0.04045
+   labl    3.0,   1.0 / 1.16,   0.16  / 1.16,   2700.0 / 24389.0,   0.08000 */
+
+
 static inline double
 linear_to_gamma_2_2 (double value)
 {
-  if (value > 0.003130804954)
-    return 1.055 * pow (value, (1.0/2.4)) - 0.055;
-  return 12.92 * value;
+  if ( value > LAB_EPSILON )
+    return 1.16 * pow (value, (1.0/3.0)) - 0.16;
+  return (value * LAB_KAPPA) / 100.0;
 }
 
 static inline double
 gamma_2_2_to_linear (double value)
 {
-  if (value > 0.04045)
-    return pow ((value + 0.055) / 1.055, 2.4);
-  return value / 12.92;
+  if ( value > 0.08 )
+    return pow ((value + 0.16) / 1.16, 3.0);
+  return (value * 100.0) / LAB_KAPPA;
 }
+
 static inline double
 babl_linear_to_gamma_2_2 (double value)
 {
-  if (value > 0.003130804954)
-    return 1.055 * babl_pow_1_24 (value) - 0.055;
-  return 12.92 * value;
+  if ( value > LAB_EPSILON )
+    return 1.16 * pow (value, (1.0/3.0)) - 0.16;
+  return (value * LAB_KAPPA) / 100.0;
 }
 static inline float
 babl_linear_to_gamma_2_2f (float value)
 {
-  if (value > 0.003130804954f)
-    {
-      return 1.055f * babl_pow_1_24f (value) -
-             (0.055f                         -
-              3.0f / (float) (1 << 24));
-              /* ^ offset the result such that 1 maps to 1 */
-    }
-  return 12.92f * value;
+  if ( value > LAB_EPSILON )
+    return 1.16 * pow (value, (1.0/3.0)) - 0.16;
+  return (value * LAB_KAPPA) / 100.0;
 }
 
 
 static inline double
 babl_gamma_2_2_to_linear (double value)
 {
-  if (value > 0.04045)
-    return babl_pow_24 ((value + 0.055) / 1.055);
-  return value / 12.92;
+  if ( value > 0.08 )
+    return pow ((value + 0.16) / 1.16, 3.0);
+  return (value * 100.0) / LAB_KAPPA;
 }
 static inline float
 babl_gamma_2_2_to_linearf (float value)
 {
-  if (value > 0.04045f)
-    return babl_pow_24f ((value + 0.055f) / 1.055f);
-  return value / 12.92f;
+  if ( value > 0.08 )
+    return pow ((value + 0.16) / 1.16, 3.0);
+  return (value * 100.0) / LAB_KAPPA;
 }
 
 #else
@@ -133,3 +139,4 @@ babl_gamma_2_2_to_linearf (float value)
 #endif
 
 #endif
+
